@@ -814,7 +814,8 @@ async function main() {
                                     return {
                                         ...apiProduct,
                                         checkState: existingProduct?.checkState ?? 'unchecked',
-                                        note: existingProduct?.note ?? ''
+                                        note: existingProduct?.note ?? '',
+                                        variedad: existingProduct?.variedad ?? ''
                                     };
                                 })
                             };
