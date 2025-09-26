@@ -1,0 +1,806 @@
+"use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var firebaseConfig_js_1 = require("../firebaseConfig.js");
+var database_1 = require("firebase/database");
+var lodash_1 = require("lodash");
+// --- CONFIGURACIÓN ---
+var tokenEndpoint = 'https://login.microsoftonline.com/eaef5c77-b0af-4131-81cf-ceb195e3389c/oauth2/v2.0/token';
+var baseUrl = 'https://api.businesscentral.dynamics.com/v2.0/eaef5c77-b0af-4131-81cf-ceb195e3389c/Production/ODataV4/';
+var companyName = 'Patatas%20Hijolusa%2C%20S.A.U';
+var encodeCompany = encodeURIComponent(companyName);
+var myClientId = '39f3eb2e-e404-4648-aebf-6fdcf9883134';
+var myClientSecret = 'ik.8Q~1ehaUuSHYU2Uc7IWxf7dDfbz5f2TTndbwc';
+var scope = 'https://api.businesscentral.dynamics.com/.default';
+// --- FUNCIONES AUXILIARES ---
+var clientNames = {
+    "C-00429": "AHORRAMAS",
+    "C-00988": "DIA",
+    "C-01142": "ALDI",
+    "C-00071": "GADISA",
+};
+function formatDate(date) {
+    var year = date.getFullYear();
+    var month = String(date.getMonth() + 1).padStart(2, '0');
+    var day = String(date.getDate()).padStart(2, '0');
+    return "".concat(year, "-").concat(month, "-").concat(day);
+}
+function getAccessToken() {
+    return __awaiter(this, void 0, void 0, function () {
+        var body, response, errorData, tokenData, error_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    body = new URLSearchParams({
+                        'grant_type': 'client_credentials',
+                        'client_id': myClientId,
+                        'client_secret': myClientSecret,
+                        'scope': scope,
+                    });
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 6, , 7]);
+                    return [4 /*yield*/, fetch(tokenEndpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: body,
+                        })];
+                case 2:
+                    response = _a.sent();
+                    if (!!response.ok) return [3 /*break*/, 4];
+                    return [4 /*yield*/, response.json()];
+                case 3:
+                    errorData = _a.sent();
+                    throw new Error("Error al obtener el token: ".concat(response.statusText, " - ").concat(JSON.stringify(errorData)));
+                case 4: return [4 /*yield*/, response.json()];
+                case 5:
+                    tokenData = _a.sent();
+                    return [2 /*return*/, tokenData.access_token];
+                case 6:
+                    error_1 = _a.sent();
+                    if (error_1 instanceof Error) {
+                        console.error('Error durante la generación del token:', error_1.message);
+                    }
+                    throw error_1;
+                case 7: return [2 /*return*/];
+            }
+        });
+    });
+}
+function agruparPedidos(lineasVenta, horasCargaPedido) {
+    var pedidosAgrupados = {};
+    lineasVenta.forEach(function (linea) {
+        if (!pedidosAgrupados[linea.numPedido]) {
+            var horas = horasCargaPedido.get(linea.numPedido) || [];
+            var horasUnicas = Array.from(new Set(horas));
+            pedidosAgrupados[linea.numPedido] = {
+                numPedido: linea.numPedido,
+                fechaPedido: linea.FechaPedido,
+                idCliente: linea.idCliente,
+                cliente: linea.Cliente,
+                NoPedidocliente: linea.NoPedidocliente,
+                TipoCliente: linea.TipoCliente,
+                plataforma: linea.Plataforma,
+                CodPlataforma: linea.CodPlataforma,
+                purchaseOrder: linea.purchaseOrder || '',
+                productos: [],
+                horasCarga: horasUnicas.sort(),
+            };
+        }
+        pedidosAgrupados[linea.numPedido].productos.push({
+            Linea: linea.Linea,
+            producto: linea.Producto,
+            descripcion: linea.Descripcion,
+            cantidad: linea.Cantidad,
+            Kg: linea.Kg,
+            Palets: linea.Palets,
+            Cajas: linea.Cajas,
+            CdadcajaTotal: linea.CdadcajaTotal,
+            ModeloPalets: linea.ModeloPalets,
+            ModeloCajas: linea.ModeloCajas,
+        });
+    });
+    Object.values(pedidosAgrupados).forEach(function (pedido) {
+        pedido.productos.sort(function (a, b) { return a.Linea - b.Linea; });
+    });
+    return Object.values(pedidosAgrupados);
+}
+function agruparPedidosMercadona(lineasVenta) {
+    var _a, _b, _c;
+    var specialProductPrefixes = ["PV", "BT"];
+    var specialProducts = lineasVenta.filter(function (linea) {
+        return specialProductPrefixes.some(function (prefix) { return linea.Producto.includes(prefix); });
+    });
+    var regularProducts = lineasVenta.filter(function (linea) {
+        return !specialProductPrefixes.some(function (prefix) { return linea.Producto.includes(prefix); });
+    });
+    var pedidosAgrupados = {};
+    var processProducts = function (productos, aAgrupar) {
+        productos.forEach(function (linea) {
+            var key = linea.Plataforma;
+            var displayPlatform = linea.Plataforma;
+            if (linea.Plataforma === " Villadangos A-1012" || linea.Plataforma === " Villadangos 2 A-1156") {
+                key = 'VILLADANGOS';
+                displayPlatform = 'VILLADANGOS';
+            }
+            if (!aAgrupar[key]) {
+                aAgrupar[key] = {
+                    numPedido: linea.numPedido,
+                    cliente: linea.Cliente,
+                    idCliente: linea.idCliente,
+                    fechaPedido: linea.FechaPedido,
+                    plataforma: displayPlatform,
+                    status: 'Pendiente',
+                    isManual: false,
+                    productos: [],
+                };
+            }
+            var productoExistente = aAgrupar[key].productos.find(function (p) { return p.producto === linea.Producto; });
+            if (productoExistente) {
+                productoExistente.cantidad += linea.Cantidad;
+                productoExistente.Kg += linea.Kg;
+                productoExistente.Palets += linea.Palets;
+                productoExistente.Cajas += linea.Cajas;
+                productoExistente.CdadcajaTotal += linea.CdadcajaTotal;
+            }
+            else {
+                aAgrupar[key].productos.push({
+                    linea: linea.Linea,
+                    producto: linea.Producto,
+                    descripcion: linea.Descripcion,
+                    cantidad: linea.Cantidad,
+                    Kg: linea.Kg,
+                    Palets: linea.Palets,
+                    Cajas: linea.Cajas,
+                    CdadcajaTotal: linea.CdadcajaTotal,
+                    ModeloPalets: linea.ModeloPalets,
+                    ModeloCajas: linea.ModeloCajas,
+                    isChecked: false,
+                });
+            }
+        });
+    };
+    processProducts(regularProducts, pedidosAgrupados);
+    var finalResponse = Object.values(pedidosAgrupados);
+    if (specialProducts.length > 0) {
+        var microAgrupado = (0, lodash_1.groupBy)(specialProducts, 'Plataforma');
+        var microCard = {
+            numPedido: 'MICRO',
+            cliente: ((_a = specialProducts[0]) === null || _a === void 0 ? void 0 : _a.Cliente) || 'MERCADONA SA',
+            idCliente: ((_b = specialProducts[0]) === null || _b === void 0 ? void 0 : _b.idCliente) || 'C-00133',
+            fechaPedido: (_c = specialProducts[0]) === null || _c === void 0 ? void 0 : _c.FechaPedido,
+            plataforma: 'MICRO',
+            status: 'Pendiente',
+            isManual: false,
+            productos: Object.entries(microAgrupado).map(function (_a) {
+                var plataforma = _a[0], productos = _a[1];
+                var groupedSubProducts = (0, lodash_1.groupBy)(productos, 'Producto');
+                var subProductosAgregados = Object.entries(groupedSubProducts).map(function (_a) {
+                    var productName = _a[0], productEntries = _a[1];
+                    var firstEntry = productEntries[0];
+                    return productEntries.reduce(function (acc, current) {
+                        acc.cantidad += current.Cantidad;
+                        acc.Kg += current.Kg;
+                        acc.Palets += current.Palets;
+                        acc.Cajas += current.Cajas;
+                        acc.CdadcajaTotal += current.CdadcajaTotal;
+                        return acc;
+                    }, {
+                        linea: firstEntry.Linea,
+                        producto: firstEntry.Producto,
+                        descripcion: firstEntry.Descripcion,
+                        cantidad: 0,
+                        Kg: 0,
+                        Palets: 0,
+                        Cajas: 0,
+                        CdadcajaTotal: 0,
+                        ModeloPalets: firstEntry.ModeloPalets,
+                        ModeloCajas: firstEntry.ModeloCajas,
+                        isChecked: false,
+                    });
+                });
+                return {
+                    plataforma: plataforma,
+                    subProductos: subProductosAgregados,
+                };
+            }),
+        };
+        finalResponse.push(microCard);
+    }
+    Object.values(pedidosAgrupados).forEach(function (pedido) {
+        if (pedido.productos) {
+            pedido.productos.sort(function (a, b) { return a.linea - b.linea; });
+        }
+    });
+    return finalResponse;
+}
+// --- FUNCIONES PRINCIPALES DE OBTENCIÓN DE DATOS ---
+function fetchApiData(apiUrl, token) {
+    return __awaiter(this, void 0, void 0, function () {
+        var response, errorText, data;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, fetch(apiUrl, {
+                        method: 'GET',
+                        headers: { 'Authorization': "Bearer ".concat(token), 'Content-Type': 'application/json' },
+                    })];
+                case 1:
+                    response = _a.sent();
+                    if (!!response.ok) return [3 /*break*/, 3];
+                    return [4 /*yield*/, response.text()];
+                case 2:
+                    errorText = _a.sent();
+                    throw new Error("Error en la petici\u00F3n a la API ".concat(apiUrl, ": ").concat(response.statusText, ". Respuesta: ").concat(errorText));
+                case 3: return [4 /*yield*/, response.json()];
+                case 4:
+                    data = _a.sent();
+                    return [2 /*return*/, data.value];
+            }
+        });
+    });
+}
+function getPedidos(token, customerType) {
+    return __awaiter(this, void 0, void 0, function () {
+        var today, TenDaysAgo, formattedDateForQuery, apiPath, tipoCliente, filtroTipoCliente, apiEndpoint, allLineasVenta, lineasConProducto, lineasPorCliente, lineasFiltradas, error_2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    today = new Date();
+                    TenDaysAgo = new Date(today);
+                    TenDaysAgo.setDate(today.getDate() - 10);
+                    formattedDateForQuery = formatDate(TenDaysAgo);
+                    apiPath = 'ConsultaLineasVenta';
+                    tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS'];
+                    filtroTipoCliente = tipoCliente.map(function (tipo) { return "TipoCliente eq '".concat(tipo, "'"); }).join(' or ');
+                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=startswith(Document_No, 'PV') and (").concat(filtroTipoCliente, ") and Order_Date ge ").concat(formattedDateForQuery);
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, fetchApiData(apiEndpoint, token)];
+                case 2:
+                    allLineasVenta = _a.sent();
+                    lineasConProducto = allLineasVenta.filter(function (linea) { return linea.No && linea.No.trim() !== ''; });
+                    lineasPorCliente = void 0;
+                    if (customerType === 'mercadona') {
+                        lineasPorCliente = lineasConProducto.filter(function (linea) {
+                            var cliente = linea.NombreCliente;
+                            return cliente === 'MERCADONA SA' || cliente === 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA';
+                        });
+                    }
+                    else {
+                        lineasPorCliente = lineasConProducto.filter(function (linea) {
+                            var cliente = linea.NombreCliente;
+                            var tipoCliente = linea.TipoCliente;
+                            if (tipoCliente === 'REPARTO') {
+                                var clientesRepartoPermitidos = ['CASA BLAS, S.A.', 'LA BAÑEZA FRUTAS Y VERDURAS SL'];
+                                return clientesRepartoPermitidos.includes(cliente);
+                            }
+                            var clientesExcluidos = [
+                                'MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA',
+                                'SOCIEDAD DE COMPRAS MODERNAS, S.A', 'GUFRESCO, S.L.',
+                                'JERÓNIMO MARTINS', 'LUZ GENERAL TRADING LLC', 'SERVICIOS HORTOFRUTICULAS DE LEVANTE, S.L',
+                                'CONDIS SUPERMERCATS, S.A.', 'FERNANDO Y TOMAS, S.L.', 'N. 751 REYPAMA S.A.T.', 'FRUTAS PATRICIA PILAR, S.A.',
+                                'PATATAS LOZANO S.L.U.', 'ALCAMPO, S.A.', 'CASA AMETLLER, S.L.', 'AGRICOLA VILLENA S.L.',
+                                'ALDI SAN ISIDRO SUPERMERCADOS, S.L. (SIS)'
+                            ];
+                            return !clientesExcluidos.includes(cliente);
+                        });
+                    }
+                    lineasFiltradas = lineasPorCliente.map(function (linea) {
+                        var esPingoDoce = linea.NombreCliente === 'PINGO DOCE - DISTRIBUIÇÃO ALIMENTAR, S.A.';
+                        return {
+                            numPedido: linea.Document_No,
+                            Linea: linea.Line_No,
+                            FechaPedido: linea.Order_Date,
+                            idCliente: linea.Sell_to_Customer_No,
+                            Cliente: linea.NombreCliente,
+                            TipoCliente: linea.TipoCliente,
+                            NoPedidocliente: linea.NoPedidocliente,
+                            Plataforma: esPingoDoce ? linea.CodPlataforma : linea.Plataforma,
+                            CodPlataforma: linea.CodPlataforma,
+                            Producto: linea.No,
+                            Descripcion: linea.Description,
+                            Cantidad: linea.Quantity,
+                            Kg: linea.Kg,
+                            Palets: linea.CantidadPalets,
+                            Cajas: linea.Cdadcaja,
+                            CdadcajaTotal: linea.CdadcajaTotal,
+                            ModeloPalets: linea.ModeloPalets,
+                            ModeloCajas: linea.ModeloCajas,
+                            purchaseOrder: linea.Purchase_Order_No || ''
+                        };
+                    });
+                    return [2 /*return*/, lineasFiltradas];
+                case 3:
+                    error_2 = _a.sent();
+                    if (error_2 instanceof Error) {
+                        console.error('Ha ocurrido un error al obtener los datos:', error_2.message);
+                    }
+                    throw error_2;
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function getPedidosMercadona(token, startDate) {
+    return __awaiter(this, void 0, void 0, function () {
+        var apiPath, cliente, filtroCliente, apiEndpoint, lineasVenta, lineasConProducto, lineasFiltradas, error_3;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    apiPath = 'ConsultaLineasVenta';
+                    cliente = ['C-00133', 'C-00656'];
+                    filtroCliente = cliente.map(function (id) { return "Sell_to_Customer_No eq '".concat(id, "'"); }).join(' or ');
+                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=(").concat(filtroCliente, ") and Order_Date ge ").concat(startDate);
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, fetchApiData(apiEndpoint, token)];
+                case 2:
+                    lineasVenta = _a.sent();
+                    lineasConProducto = lineasVenta.filter(function (linea) { return linea.No && linea.No.trim() !== ''; });
+                    lineasFiltradas = lineasConProducto.map(function (linea) {
+                        return {
+                            numPedido: linea.Document_No,
+                            Linea: linea.Line_No,
+                            FechaPedido: linea.Order_Date,
+                            idCliente: linea.Sell_to_Customer_No,
+                            Cliente: linea.NombreCliente,
+                            Plataforma: linea.Plataforma,
+                            Producto: linea.No,
+                            Descripcion: linea.Description,
+                            Cantidad: linea.Quantity,
+                            Kg: linea.Kg,
+                            Palets: linea.CantidadPalets,
+                            Cajas: linea.Cdadcaja,
+                            CdadcajaTotal: linea.CdadcajaTotal,
+                            ModeloPalets: linea.ModeloPalets,
+                            ModeloCajas: linea.ModeloCajas,
+                        };
+                    });
+                    return [2 /*return*/, lineasFiltradas];
+                case 3:
+                    error_3 = _a.sent();
+                    if (error_3 instanceof Error) {
+                        console.error('Ha ocurrido un error al obtener los datos de Mercadona:', error_3.message);
+                    }
+                    throw error_3;
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function getHorasCarga(token, date) {
+    return __awaiter(this, void 0, void 0, function () {
+        var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDireccionesEnvio, urlExp, urlDirecciones, horasCarga, direcciones, direccionesMap_1, expedicionesConCiudad, groupedByHora, result, error_4;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    formattedDate = formatDate(date);
+                    clientes = ['MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA'];
+                    filtroExp = clientes.map(function (cliente) { return "NombreCliente eq '".concat(cliente.replace("'", "''"), "'"); }).join(' or ');
+                    apiExp = "lineasExpdici%C3%B3n?$filter=(".concat(filtroExp, ") and FechaEnvio eq ").concat(formattedDate);
+                    idClientes = ['C-00133', 'C-00656'];
+                    direccionEnvioFilter = idClientes.map(function (id) { return "Customer_No eq '".concat(id, "'"); }).join(' or ');
+                    apiDireccionesEnvio = "DireccionesEnvio?$filter=(".concat(direccionEnvioFilter, ")");
+                    urlExp = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiExp);
+                    urlDirecciones = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiDireccionesEnvio);
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 4, , 5]);
+                    return [4 /*yield*/, fetchApiData(urlExp, token)];
+                case 2:
+                    horasCarga = _a.sent();
+                    if (horasCarga.length === 0) {
+                        console.log("No se encontraron horas de carga para la fecha ".concat(formattedDate, "."));
+                        return [2 /*return*/, []]; // Devuelve un array vacío si no hay datos
+                    }
+                    return [4 /*yield*/, fetchApiData(urlDirecciones, token)];
+                case 3:
+                    direcciones = _a.sent();
+                    direccionesMap_1 = new Map(direcciones.map(function (d) { return [d.Code, d.City]; }));
+                    expedicionesConCiudad = horasCarga.map(function (exp) { return (__assign(__assign({}, exp), { Plataforma: direccionesMap_1.get(exp.Plataforma) || exp.Plataforma })); });
+                    groupedByHora = (0, lodash_1.groupBy)(expedicionesConCiudad, 'HoraCarga');
+                    result = Object.entries(groupedByHora).map(function (_a) {
+                        var horaCarga = _a[0], items = _a[1];
+                        var groupedByPlataforma = (0, lodash_1.groupBy)(items, 'Plataforma');
+                        var plataformas = Object.entries(groupedByPlataforma).map(function (_a) {
+                            var plataforma = _a[0], productos = _a[1];
+                            return ({
+                                plataforma: plataforma,
+                                productos: productos.map(function (_a) {
+                                    var No = _a.No, NumPaletsCompleto = _a.NumPaletsCompleto, NumCajasPico = _a.NumCajasPico;
+                                    return ({
+                                        No: No,
+                                        NumPaletsCompleto: NumPaletsCompleto,
+                                        NumCajasPico: NumCajasPico,
+                                    });
+                                }),
+                            });
+                        });
+                        var plataformasFiltradas = plataformas.filter(function (p) {
+                            var platformsToFilter = ["Ribarroja A-1246", "Parc Sagunt A-1105", "San Isidro A-1157"];
+                            var productsToFilter = ["MM50", "GRN80"];
+                            if (platformsToFilter.includes(p.plataforma.trim())) {
+                                var productNames = p.productos.map(function (prod) { return prod.No; });
+                                var hasOnlyFilterProducts = productNames.every(function (name) { return productsToFilter.includes(name); });
+                                return !hasOnlyFilterProducts;
+                            }
+                            return true;
+                        });
+                        return {
+                            horaCarga: horaCarga,
+                            plataformas: plataformasFiltradas,
+                        };
+                    }).filter(function (expedicion) { return expedicion.plataformas.length > 0; });
+                    return [2 /*return*/, result];
+                case 4:
+                    error_4 = _a.sent();
+                    if (error_4 instanceof Error) {
+                        console.error("Ha ocurrido un error al obtener las horas carga Mercadona para la fecha ".concat(formattedDate, ":"), error_4.message);
+                    }
+                    return [2 /*return*/, []]; // Devuelve un array vacío en caso de error
+                case 5: return [2 /*return*/];
+            }
+        });
+    });
+}
+function enrichProductsWithClientNames(products) {
+    return products.map(function (item) { return (__assign(__assign({}, item), { Nombre_Cliente: item.Nombre_Cliente || clientNames[item.Cliente] || 'Desconocido' })); });
+}
+function groupProducts(products) {
+    var productosAgrupados = {};
+    products.forEach(function (item) {
+        var clientName = item.Nombre_Cliente;
+        if (!clientName || clientName === 'Desconocido')
+            return;
+        if (!productosAgrupados[clientName]) {
+            productosAgrupados[clientName] = [];
+        }
+        if (item.Item_No && !productosAgrupados[clientName].includes(item.Item_No)) {
+            productosAgrupados[clientName].push(item.Item_No);
+        }
+    });
+    return productosAgrupados;
+}
+function getProductosCliente() {
+    return __awaiter(this, void 0, void 0, function () {
+        var idClientes, filtroClientes, apiEmbalajeClienteProducto, embalajeEndpoint, token, embalajeProducts, enrichedProducts, productosAgrupados, error_5;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    idClientes = ['C-00429', 'C-00988', 'C-01142', 'C-00071'];
+                    filtroClientes = idClientes.map(function (id) { return "Cliente eq '".concat(id, "'"); }).join(' or ');
+                    apiEmbalajeClienteProducto = "EmblajeClienteProducto?$filter=(".concat(filtroClientes, ")");
+                    embalajeEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiEmbalajeClienteProducto);
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 4, , 5]);
+                    return [4 /*yield*/, getAccessToken()];
+                case 2:
+                    token = _a.sent();
+                    return [4 /*yield*/, fetchApiData(embalajeEndpoint, token)];
+                case 3:
+                    embalajeProducts = _a.sent();
+                    enrichedProducts = enrichProductsWithClientNames(embalajeProducts);
+                    productosAgrupados = groupProducts(enrichedProducts);
+                    return [2 /*return*/, productosAgrupados];
+                case 4:
+                    error_5 = _a.sent();
+                    if (error_5 instanceof Error) {
+                        console.error('Ha ocurrido un error al obtener los productos de cliente:', error_5.message);
+                    }
+                    return [3 /*break*/, 5];
+                case 5: return [2 /*return*/];
+            }
+        });
+    });
+}
+// --- FUNCIÓN PRINCIPAL ---
+function main() {
+    return __awaiter(this, void 0, void 0, function () {
+        var token, today, tenDaysAgo, formattedTenDaysAgo, apiExp, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, mercadonaLinesData, pedidosPorFecha, _loop_1, _i, _a, fecha, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_6;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    _b.trys.push([0, 23, , 24]);
+                    console.log('Iniciando subida de datos...');
+                    return [4 /*yield*/, getAccessToken()];
+                case 1:
+                    token = _b.sent();
+                    today = new Date();
+                    tenDaysAgo = new Date(today);
+                    tenDaysAgo.setDate(today.getDate() - 10);
+                    formattedTenDaysAgo = formatDate(tenDaysAgo);
+                    // --- PEDIDOS GENERALES ---
+                    console.log('Procesando pedidos generales...');
+                    apiExp = 'lineasExpdici%C3%B3n';
+                    lineasExpedicionUrl = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiExp);
+                    return [4 /*yield*/, fetchApiData(lineasExpedicionUrl, token)];
+                case 2:
+                    expedicionesData = _b.sent();
+                    horasDeCargaPorPedido_1 = new Map();
+                    expedicionesData.forEach(function (expedicion) {
+                        if (!horasDeCargaPorPedido_1.has(expedicion.NumPedido)) {
+                            horasDeCargaPorPedido_1.set(expedicion.NumPedido, []);
+                        }
+                        if (expedicion.HoraCarga) {
+                            horasDeCargaPorPedido_1.get(expedicion.NumPedido).push(expedicion.HoraCarga);
+                        }
+                    });
+                    return [4 /*yield*/, getPedidos(token)];
+                case 3:
+                    lineasVentaData = _b.sent();
+                    pedidosApi = agruparPedidos(lineasVentaData, horasDeCargaPorPedido_1);
+                    console.log('Obteniendo pedidos generales existentes de Firebase...');
+                    allOrdersRef = (0, database_1.ref)(firebaseConfig_js_1.database, 'allOrders');
+                    return [4 /*yield*/, (0, database_1.get)(allOrdersRef)];
+                case 4:
+                    snapshot = _b.sent();
+                    firebaseData_1 = snapshot.val() || {};
+                    firebaseOrderMap_1 = new Map();
+                    Object.keys(firebaseData_1).forEach(function (date) {
+                        var dateOrders = firebaseData_1[date];
+                        Object.keys(dateOrders).forEach(function (orderId) {
+                            firebaseOrderMap_1.set(orderId, __assign(__assign({}, dateOrders[orderId]), { originalDate: date }));
+                        });
+                    });
+                    console.log("".concat(firebaseOrderMap_1.size, " pedidos generales encontrados en Firebase."));
+                    updates_1 = {};
+                    newOrdersCount_1 = 0;
+                    updatedOrdersCount_1 = 0;
+                    deletedOrdersCount_1 = 0;
+                    pedidosApi.forEach(function (pedido) {
+                        var _a;
+                        var orderDate = pedido.fechaPedido.split('T')[0];
+                        var path = "allOrders/".concat(orderDate, "/").concat(pedido.numPedido);
+                        var existingOrder = firebaseOrderMap_1.get(pedido.numPedido);
+                        if (!existingOrder) {
+                            updates_1[path] = __assign(__assign({}, pedido), { status: 'Pendiente', productos: (pedido.productos || []).map(function (p) { return (__assign(__assign({}, p), { checkState: 'unchecked' })); }) });
+                            newOrdersCount_1++;
+                        }
+                        else {
+                            if (existingOrder.originalDate && existingOrder.originalDate !== orderDate) {
+                                var oldPath = "allOrders/".concat(existingOrder.originalDate, "/").concat(pedido.numPedido);
+                                updates_1[oldPath] = null;
+                                deletedOrdersCount_1++;
+                            }
+                            var existingProducts_1 = ((_a = existingOrder.productos) === null || _a === void 0 ? void 0 : _a.map(function (p) {
+                                var _a;
+                                return __assign(__assign({}, p), { checkState: (_a = p.checkState) !== null && _a !== void 0 ? _a : 'unchecked' });
+                            })) || [];
+                            var mergedOrder = __assign(__assign(__assign({}, existingOrder), pedido), { productos: pedido.productos.map(function (apiProduct) {
+                                    var _a;
+                                    var existingProduct = existingProducts_1.find(function (p) { return p.Linea === apiProduct.Linea; });
+                                    return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked' });
+                                }) });
+                            if (!(0, lodash_1.isEqual)(existingOrder, mergedOrder)) {
+                                updates_1[path] = mergedOrder;
+                                updatedOrdersCount_1++;
+                            }
+                        }
+                    });
+                    if (!(Object.keys(updates_1).length > 0)) return [3 /*break*/, 6];
+                    return [4 /*yield*/, (0, database_1.update)((0, database_1.ref)(firebaseConfig_js_1.database), updates_1)];
+                case 5:
+                    _b.sent();
+                    console.log("".concat(newOrdersCount_1, " nuevos pedidos generales a\u00F1adidos. ").concat(updatedOrdersCount_1, " pedidos existentes actualizados. ").concat(deletedOrdersCount_1, " pedidos antiguos eliminados por cambio de fecha."));
+                    return [3 /*break*/, 7];
+                case 6:
+                    console.log('No se encontraron nuevos pedidos generales para añadir o actualizar.');
+                    _b.label = 7;
+                case 7:
+                    // --- PEDIDOS MERCADONA ---
+                    console.log('\nProcesando pedidos de Mercadona...');
+                    return [4 /*yield*/, getPedidosMercadona(token, formattedTenDaysAgo)];
+                case 8:
+                    mercadonaLinesData = _b.sent();
+                    if (!(mercadonaLinesData.length > 0)) return [3 /*break*/, 13];
+                    pedidosPorFecha = (0, lodash_1.groupBy)(mercadonaLinesData, function (linea) { return linea.FechaPedido.split('T')[0]; });
+                    _loop_1 = function (fecha) {
+                        var pedidosDelDia, pedidosMercadonaApi, mercadonaRef, snapshotMercadona, firebaseMercadonaData, firebaseMercadonaMap_1, dataAsArray, mercadonaUpdates_1, newMercadonaCount_1, updatedMercadonaCount_1, nextNewIndex_1;
+                        return __generator(this, function (_c) {
+                            switch (_c.label) {
+                                case 0:
+                                    console.log("Procesando Mercadona para fecha: ".concat(fecha));
+                                    pedidosDelDia = pedidosPorFecha[fecha];
+                                    pedidosMercadonaApi = agruparPedidosMercadona(pedidosDelDia);
+                                    if (!(pedidosMercadonaApi.length > 0)) return [3 /*break*/, 4];
+                                    mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
+                                    return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
+                                case 1:
+                                    snapshotMercadona = _c.sent();
+                                    firebaseMercadonaData = snapshotMercadona.val() || [];
+                                    firebaseMercadonaMap_1 = new Map();
+                                    dataAsArray = Array.isArray(firebaseMercadonaData)
+                                        ? firebaseMercadonaData
+                                        : Object.values(firebaseMercadonaData);
+                                    dataAsArray.forEach(function (pedido, index) {
+                                        if (pedido) {
+                                            var key = pedido.plataforma === 'MICRO' ? 'MICRO' : pedido.plataforma;
+                                            firebaseMercadonaMap_1.set(key, __assign(__assign({}, pedido), { originalIndex: index }));
+                                        }
+                                    });
+                                    mercadonaUpdates_1 = {};
+                                    newMercadonaCount_1 = 0;
+                                    updatedMercadonaCount_1 = 0;
+                                    nextNewIndex_1 = dataAsArray.filter(Boolean).length;
+                                    pedidosMercadonaApi.forEach(function (pedidoApi) {
+                                        var key = pedidoApi.plataforma === 'MICRO' ? 'MICRO' : pedidoApi.plataforma;
+                                        var existingOrderData = firebaseMercadonaMap_1.get(key);
+                                        if (!existingOrderData) {
+                                            // Pedido nuevo
+                                            var newOrder = __assign(__assign({}, pedidoApi), { productos: (pedidoApi.productos || []).map(function (p) { return (__assign(__assign({}, p), { checkState: 'unchecked', note: '' })); }) });
+                                            mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(nextNewIndex_1)] = newOrder;
+                                            newMercadonaCount_1++;
+                                            nextNewIndex_1++;
+                                        }
+                                        else {
+                                            // Pedido existente, fusionar y comprobar cambios
+                                            var originalIndex = existingOrderData.originalIndex, existingOrder_1 = __rest(existingOrderData, ["originalIndex"]);
+                                            var mergedOrder = __assign(__assign(__assign({}, pedidoApi), existingOrder_1), { productos: (pedidoApi.productos || []).map(function (apiProduct) {
+                                                    var _a, _b;
+                                                    var existingProduct = (existingOrder_1.productos || []).find(function (p) { return p.linea === apiProduct.linea; });
+                                                    return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.note) !== null && _b !== void 0 ? _b : '' });
+                                                }) });
+                                            if (pedidoApi.plataforma === 'MICRO' && mergedOrder.productos) {
+                                                mergedOrder.productos = pedidoApi.productos.map(function (apiPlat) {
+                                                    var existingPlat = (existingOrder_1.productos || []).find(function (p) { return p.plataforma === apiPlat.plataforma; });
+                                                    if (existingPlat) {
+                                                        return __assign(__assign({}, apiPlat), { subProductos: apiPlat.subProductos.map(function (apiSub) {
+                                                                var _a, _b;
+                                                                var existingSub = (existingPlat.subProductos || []).find(function (s) { return s.producto === apiSub.producto; });
+                                                                return __assign(__assign({}, apiSub), { checkState: (_a = existingSub === null || existingSub === void 0 ? void 0 : existingSub.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingSub === null || existingSub === void 0 ? void 0 : existingSub.note) !== null && _b !== void 0 ? _b : '' });
+                                                            }) });
+                                                    }
+                                                    return apiPlat;
+                                                });
+                                            }
+                                            if (!(0, lodash_1.isEqual)(existingOrder_1, mergedOrder)) {
+                                                mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(originalIndex)] = mergedOrder;
+                                                updatedMercadonaCount_1++;
+                                            }
+                                        }
+                                    });
+                                    if (!(Object.keys(mercadonaUpdates_1).length > 0)) return [3 /*break*/, 3];
+                                    return [4 /*yield*/, (0, database_1.update)((0, database_1.ref)(firebaseConfig_js_1.database), mercadonaUpdates_1)];
+                                case 2:
+                                    _c.sent();
+                                    console.log("Mercadona (".concat(fecha, "): ").concat(newMercadonaCount_1, " nuevos a\u00F1adidos, ").concat(updatedMercadonaCount_1, " actualizados."));
+                                    return [3 /*break*/, 4];
+                                case 3:
+                                    console.log("Mercadona (".concat(fecha, "): Sin cambios."));
+                                    _c.label = 4;
+                                case 4: return [2 /*return*/];
+                            }
+                        });
+                    };
+                    _i = 0, _a = Object.keys(pedidosPorFecha);
+                    _b.label = 9;
+                case 9:
+                    if (!(_i < _a.length)) return [3 /*break*/, 12];
+                    fecha = _a[_i];
+                    return [5 /*yield**/, _loop_1(fecha)];
+                case 10:
+                    _b.sent();
+                    _b.label = 11;
+                case 11:
+                    _i++;
+                    return [3 /*break*/, 9];
+                case 12: return [3 /*break*/, 14];
+                case 13:
+                    console.log('No se encontraron pedidos de Mercadona en el rango de fechas especificado.');
+                    _b.label = 14;
+                case 14:
+                    // --- HORAS CARGA MERCADONA ---
+                    console.log('\nProcesando horas de carga de Mercadona para los últimos días...');
+                    i = -2;
+                    _b.label = 15;
+                case 15:
+                    if (!(i < 3)) return [3 /*break*/, 20];
+                    targetDate = new Date();
+                    targetDate.setDate(today.getDate() - i);
+                    formattedDate = formatDate(targetDate);
+                    console.log("Obteniendo horas de carga para ".concat(formattedDate, "..."));
+                    return [4 /*yield*/, getHorasCarga(token, targetDate)];
+                case 16:
+                    horasCargaData = _b.sent();
+                    if (!(horasCargaData && horasCargaData.length > 0)) return [3 /*break*/, 18];
+                    horasCargaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "horasCargaMercadona/".concat(formattedDate));
+                    return [4 /*yield*/, (0, database_1.set)(horasCargaRef, horasCargaData)];
+                case 17:
+                    _b.sent();
+                    console.log("Horas de carga de Mercadona para ".concat(formattedDate, " guardadas en Firebase."));
+                    return [3 /*break*/, 19];
+                case 18:
+                    console.log("No se encontraron horas de carga de Mercadona para ".concat(formattedDate, ", no se guardar\u00E1 nada."));
+                    _b.label = 19;
+                case 19:
+                    i++;
+                    return [3 /*break*/, 15];
+                case 20:
+                    // --- PRODUCTOS CLIENTE ---
+                    console.log('\nProcesando productos de cliente...');
+                    return [4 /*yield*/, getProductosCliente()];
+                case 21:
+                    productosCliente = _b.sent();
+                    productosClienteRef = (0, database_1.ref)(firebaseConfig_js_1.database, 'productosCliente');
+                    return [4 /*yield*/, (0, database_1.set)(productosClienteRef, productosCliente)];
+                case 22:
+                    _b.sent();
+                    console.log('Productos de cliente guardados en Firebase.');
+                    console.log('\nSubida de datos completada con éxito.');
+                    return [3 /*break*/, 24];
+                case 23:
+                    error_6 = _b.sent();
+                    if (error_6 instanceof Error) {
+                        console.error('Error en el proceso principal:', error_6.message);
+                    }
+                    else {
+                        console.error('Ocurrió un error desconocido en el proceso principal.');
+                    }
+                    return [3 /*break*/, 24];
+                case 24: return [2 /*return*/];
+            }
+        });
+    });
+}
+// Descomenta la siguiente línea para ejecutar la función al correr el script
+main();
