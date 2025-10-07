@@ -174,9 +174,9 @@ function agruparPedidosMercadona(lineasVenta) {
     var pedidosAgrupados = {};
     var processProducts = function (productos, aAgrupar) {
         productos.forEach(function (linea) {
-            var key = linea.Plataforma;
-            var displayPlatform = linea.Plataforma;
-            if (linea.Plataforma === " Villadangos A-1012" || linea.Plataforma === " Villadangos 2 A-1156") {
+            var key = linea.Plataforma.trim();
+            var displayPlatform = linea.Plataforma.trim();
+            if (linea.Plataforma.trim() === "Villadangos A-1012" || linea.Plataforma.trim() === "Villadangos 2 A-1156") {
                 key = 'VILLADANGOS';
                 displayPlatform = 'VILLADANGOS';
             }
@@ -267,6 +267,10 @@ function agruparPedidosMercadona(lineasVenta) {
     Object.values(pedidosAgrupados).forEach(function (pedido) {
         if (pedido.productos) {
             pedido.productos.sort(function (a, b) { return a.linea - b.linea; });
+            // Asignar línea única
+            pedido.productos.forEach(function (producto, index) {
+                producto.linea = producto.linea * 1000 + index;
+            });
         }
     });
     return finalResponse;
@@ -429,7 +433,7 @@ function getPedidosMercadona(token, startDate) {
 }
 function getHorasCarga(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDireccionesEnvio, urlExp, urlDirecciones, horasCarga, direcciones, direccionesMap_1, expedicionesConCiudad, groupedByHora, result, error_4;
+        var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDireccionesEnvio, urlExp, urlDirecciones, filtroExpCam, urlExpCamion, urlProveedores, horasCarga, direcciones, direccionesMap_1, expedicionesConCiudad, groupedByHora, result, error_4;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -442,6 +446,9 @@ function getHorasCarga(token, date) {
                     apiDireccionesEnvio = "DireccionesEnvio?$filter=(".concat(direccionEnvioFilter, ")");
                     urlExp = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiExp);
                     urlDirecciones = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiDireccionesEnvio);
+                    filtroExpCam = "Expediciones?$filter=(FechaEnvio eq ".concat(formattedDate, ")");
+                    urlExpCamion = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(filtroExpCam);
+                    urlProveedores = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/Proveedores");
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 4, , 5]);
@@ -452,9 +459,13 @@ function getHorasCarga(token, date) {
                         console.log("No se encontraron horas de carga para la fecha ".concat(formattedDate, "."));
                         return [2 /*return*/, []]; // Devuelve un array vacío si no hay datos
                     }
-                    return [4 /*yield*/, fetchApiData(urlDirecciones, token)];
+                    return [4 /*yield*/, Promise.all([
+                            fetchApiData(urlDirecciones, token),
+                            //fetchApiData<expCamion>(urlExpCamion, token),
+                            //fetchApiData<Proveedores>(urlProveedores, token)
+                        ])];
                 case 3:
-                    direcciones = _a.sent();
+                    direcciones = (_a.sent())[0];
                     direccionesMap_1 = new Map(direcciones.map(function (d) { return [d.Code, d.City]; }));
                     expedicionesConCiudad = horasCarga.map(function (exp) { return (__assign(__assign({}, exp), { Plataforma: direccionesMap_1.get(exp.Plataforma) || exp.Plataforma })); });
                     groupedByHora = (0, lodash_1.groupBy)(expedicionesConCiudad, 'HoraCarga');
@@ -466,11 +477,12 @@ function getHorasCarga(token, date) {
                             return ({
                                 plataforma: plataforma,
                                 productos: productos.map(function (_a) {
-                                    var No = _a.No, NumPaletsCompleto = _a.NumPaletsCompleto, NumCajasPico = _a.NumCajasPico;
+                                    var No = _a.No, NumPaletsCompleto = _a.NumPaletsCompleto, NumCajasPico = _a.NumCajasPico, Numero = _a.Numero;
                                     return ({
                                         No: No,
                                         NumPaletsCompleto: NumPaletsCompleto,
                                         NumCajasPico: NumCajasPico,
+                                        Numero: Numero
                                     });
                                 }),
                             });
@@ -567,7 +579,7 @@ function main() {
                     token = _b.sent();
                     today = new Date();
                     tenDaysAgo = new Date(today);
-                    tenDaysAgo.setDate(today.getDate() - 10);
+                    tenDaysAgo.setDate(today.getDate() - 5);
                     formattedTenDaysAgo = formatDate(tenDaysAgo);
                     // --- PEDIDOS GENERALES ---
                     console.log('Procesando pedidos generales...');
@@ -613,7 +625,7 @@ function main() {
                         var path = "allOrders/".concat(orderDate, "/").concat(pedido.numPedido);
                         var existingOrder = firebaseOrderMap_1.get(pedido.numPedido);
                         if (!existingOrder) {
-                            updates_1[path] = __assign(__assign({}, pedido), { status: 'Pendiente', productos: (pedido.productos || []).map(function (p) { return (__assign(__assign({}, p), { checkState: 'unchecked' })); }) });
+                            updates_1[path] = __assign(__assign({}, pedido), { status: 'Pendiente', isNew: true, productos: (pedido.productos || []).map(function (p) { return (__assign(__assign({}, p), { checkState: 'unchecked' })); }) });
                             newOrdersCount_1++;
                         }
                         else {
@@ -674,7 +686,7 @@ function main() {
                                         : Object.values(firebaseMercadonaData);
                                     dataAsArray.forEach(function (pedido, index) {
                                         if (pedido) {
-                                            var key = pedido.plataforma === 'MICRO' ? 'MICRO' : pedido.plataforma;
+                                            var key = pedido.plataforma === 'MICRO' ? 'MICRO' : pedido.plataforma.trim();
                                             firebaseMercadonaMap_1.set(key, __assign(__assign({}, pedido), { originalIndex: index }));
                                         }
                                     });
@@ -683,11 +695,11 @@ function main() {
                                     updatedMercadonaCount_1 = 0;
                                     nextNewIndex_1 = dataAsArray.filter(Boolean).length;
                                     pedidosMercadonaApi.forEach(function (pedidoApi) {
-                                        var key = pedidoApi.plataforma === 'MICRO' ? 'MICRO' : pedidoApi.plataforma;
+                                        var key = pedidoApi.plataforma === 'MICRO' ? 'MICRO' : pedidoApi.plataforma.trim();
                                         var existingOrderData = firebaseMercadonaMap_1.get(key);
                                         if (!existingOrderData) {
                                             // Pedido nuevo
-                                            var newOrder = __assign(__assign({}, pedidoApi), { productos: (pedidoApi.productos || []).map(function (p) { return (__assign(__assign({}, p), { checkState: 'unchecked', note: '' })); }) });
+                                            var newOrder = __assign(__assign({}, pedidoApi), { isNew: true, productos: (pedidoApi.productos || []).map(function (p) { return (__assign(__assign({}, p), { checkState: 'unchecked', note: '' })); }) });
                                             mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(nextNewIndex_1)] = newOrder;
                                             newMercadonaCount_1++;
                                             nextNewIndex_1++;
@@ -696,18 +708,18 @@ function main() {
                                             // Pedido existente, fusionar y comprobar cambios
                                             var originalIndex = existingOrderData.originalIndex, existingOrder_1 = __rest(existingOrderData, ["originalIndex"]);
                                             var mergedOrder = __assign(__assign(__assign({}, pedidoApi), existingOrder_1), { productos: (pedidoApi.productos || []).map(function (apiProduct) {
-                                                    var _a, _b;
+                                                    var _a, _b, _c, _d;
                                                     var existingProduct = (existingOrder_1.productos || []).find(function (p) { return p.linea === apiProduct.linea; });
-                                                    return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.note) !== null && _b !== void 0 ? _b : '' });
+                                                    return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.origen) !== null && _d !== void 0 ? _d : '' });
                                                 }) });
                                             if (pedidoApi.plataforma === 'MICRO' && mergedOrder.productos) {
                                                 mergedOrder.productos = pedidoApi.productos.map(function (apiPlat) {
                                                     var existingPlat = (existingOrder_1.productos || []).find(function (p) { return p.plataforma === apiPlat.plataforma; });
                                                     if (existingPlat) {
                                                         return __assign(__assign({}, apiPlat), { subProductos: apiPlat.subProductos.map(function (apiSub) {
-                                                                var _a, _b;
+                                                                var _a, _b, _c, _d;
                                                                 var existingSub = (existingPlat.subProductos || []).find(function (s) { return s.producto === apiSub.producto; });
-                                                                return __assign(__assign({}, apiSub), { checkState: (_a = existingSub === null || existingSub === void 0 ? void 0 : existingSub.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingSub === null || existingSub === void 0 ? void 0 : existingSub.note) !== null && _b !== void 0 ? _b : '' });
+                                                                return __assign(__assign({}, apiSub), { checkState: (_a = existingSub === null || existingSub === void 0 ? void 0 : existingSub.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingSub === null || existingSub === void 0 ? void 0 : existingSub.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingSub === null || existingSub === void 0 ? void 0 : existingSub.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingSub === null || existingSub === void 0 ? void 0 : existingSub.origen) !== null && _d !== void 0 ? _d : '' });
                                                             }) });
                                                     }
                                                     return apiPlat;

@@ -137,12 +137,22 @@ interface horasExp {
 
 interface expCamion {
     Numero: string;
-    Conductor: string;
+    Shipping_Agent_Code: string;
+    Name: string;
+    proveedor?: {
+        Name: string;
+    };
 }
   
 interface Direccion {
     Code: string;
     City: string;
+}
+
+interface Proveedores {
+
+    No: string
+    Name: string
 }
 
 interface ClienteProductoAPI {
@@ -377,6 +387,10 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
     Object.values(pedidosAgrupados).forEach((pedido: any) => {
         if (pedido.productos) {
             pedido.productos.sort((a: any, b: any) => a.linea - b.linea);
+            // Asignar línea única
+            pedido.productos.forEach((producto: any, index: number) => {
+                producto.linea = producto.linea * 1000 + index;
+            });
         }
     });
 
@@ -535,7 +549,8 @@ async function getHorasCarga(token: string, date: Date) {
 
     const filtroExpCam = `Expediciones?$filter=(FechaEnvio eq ${formattedDate})`;
     const urlExpCamion = `${baseUrl}Company('${encodeCompany}')/${filtroExpCam}`;
-
+    
+    const urlProveedores = `${baseUrl}Company('${encodeCompany}')/Proveedores`;
 
     try {
         const horasCarga = await fetchApiData<horasExp>(urlExp, token);
@@ -544,16 +559,29 @@ async function getHorasCarga(token: string, date: Date) {
             return []; // Devuelve un array vacío si no hay datos
         }
 
-        const direcciones = await fetchApiData<Direccion>(urlDirecciones, token);
+        const [direcciones] = await Promise.all([
+            fetchApiData<Direccion>(urlDirecciones, token),
+            //fetchApiData<expCamion>(urlExpCamion, token),
+            //fetchApiData<Proveedores>(urlProveedores, token)
+        ]);
+
         const direccionesMap = new Map(direcciones.map(d => [d.Code, d.City]));
-        
-        const expedicionesCamion = await fetchApiData<expCamion>(urlExpCamion, token);
-        const conductoresMap = new Map(expedicionesCamion.map(e => [e.Numero, e.Conductor]));
+        //const proveedoresMap = new Map(proveedores.map(p => [p.No, p.Name]));
+
+        /**const conductoresMap = new Map(expedicionesCamion.map(e => {
+            const conductorName = proveedoresMap.get(e.Shipping_Agent_Code) || e.Name || e.Shipping_Agent_Code;
+            return [e.Numero, conductorName];
+        }));**/
 
         const expedicionesConCiudad = horasCarga.map(exp => ({
             ...exp,
             Plataforma: direccionesMap.get(exp.Plataforma) || exp.Plataforma
         }));
+
+        /**const expedicionesConConductor = expedicionesConCiudad.map(exp => ({
+            ...exp,
+            Conductor: conductoresMap.get(exp.Numero) || ''
+        }));**/
 
         const groupedByHora = groupBy(expedicionesConCiudad, 'HoraCarga');
 
@@ -566,8 +594,7 @@ async function getHorasCarga(token: string, date: Date) {
                     No,
                     NumPaletsCompleto,
                     NumCajasPico,
-                    Numero,
-                    Conductor: conductoresMap.get(Numero) || ''
+                    Numero
                 })),
             }));
 
@@ -656,7 +683,7 @@ async function main() {
         const token = await getAccessToken();
         const today = new Date();
         const tenDaysAgo = new Date(today);
-        tenDaysAgo.setDate(today.getDate() - 10);
+        tenDaysAgo.setDate(today.getDate() - 5);
         const formattedTenDaysAgo = formatDate(tenDaysAgo);
 
         // --- PEDIDOS GENERALES ---
@@ -708,6 +735,7 @@ async function main() {
                 updates[path] = {
                     ...pedido,
                     status: 'Pendiente',
+                    isNew: true, // Marcar como nuevo
                     productos: (pedido.productos || []).map(p => ({
                         ...p,
                         checkState: 'unchecked',
@@ -797,6 +825,7 @@ async function main() {
                             // Pedido nuevo
                             const newOrder = {
                                 ...pedidoApi,
+                                isNew: true, // Marcar como nuevo
                                 productos: (pedidoApi.productos || []).map((p: any) => ({ ...p, checkState: 'unchecked', note: '' }))
                             };
                             mercadonaUpdates[`mercadona/${fecha}/${nextNewIndex}`] = newOrder;
@@ -815,7 +844,8 @@ async function main() {
                                         ...apiProduct,
                                         checkState: existingProduct?.checkState ?? 'unchecked',
                                         note: existingProduct?.note ?? '',
-                                        variedad: existingProduct?.variedad ?? ''
+                                        variedad: existingProduct?.variedad ?? '',
+                                        origen: existingProduct?.origen ?? ''
                                     };
                                 })
                             };
@@ -831,7 +861,9 @@ async function main() {
                                                 return {
                                                     ...apiSub,
                                                     checkState: existingSub?.checkState ?? 'unchecked',
-                                                    note: existingSub?.note ?? ''
+                                                    note: existingSub?.note ?? '',
+                                                    variedad: existingSub?.variedad ?? '',
+                                                    origen: existingSub?.origen ?? ''
                                                 };
                                             })
                                         };
