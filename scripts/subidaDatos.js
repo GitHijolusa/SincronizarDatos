@@ -399,7 +399,15 @@ function getPedidosMercadona(token, startDate) {
                     return [4 /*yield*/, fetchApiData(apiEndpoint, token)];
                 case 2:
                     lineasVenta = _a.sent();
-                    lineasConProducto = lineasVenta.filter(function (linea) { return linea.No && linea.No.trim() !== ''; });
+                    lineasConProducto = lineasVenta.filter(function (linea) {
+                        if (linea.NombreCliente === 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA' && linea.Plataforma === 'VILA NOVA DE GAIA') {
+                            return false;
+                        }
+                        if (linea.NombreCliente === 'MERCADONA SA' && linea.Plataforma === 'ALBALAT DELS SORELLS') {
+                            return false;
+                        }
+                        return linea.No && linea.No.trim() !== '';
+                    });
                     lineasFiltradas = lineasConProducto.map(function (linea) {
                         return {
                             numPedido: linea.Document_No,
@@ -477,12 +485,13 @@ function getHorasCarga(token, date) {
                             return ({
                                 plataforma: plataforma,
                                 productos: productos.map(function (_a) {
-                                    var No = _a.No, NumPaletsCompleto = _a.NumPaletsCompleto, NumCajasPico = _a.NumCajasPico, Numero = _a.Numero;
+                                    var No = _a.No, NumPaletsCompleto = _a.NumPaletsCompleto, NumCajasPico = _a.NumCajasPico, Numero = _a.Numero, NumPedido = _a.NumPedido;
                                     return ({
                                         No: No,
                                         NumPaletsCompleto: NumPaletsCompleto,
                                         NumCajasPico: NumCajasPico,
-                                        Numero: Numero
+                                        Numero: Numero,
+                                        NumPedido: NumPedido,
                                     });
                                 }),
                             });

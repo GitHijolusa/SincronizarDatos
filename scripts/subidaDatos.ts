@@ -133,6 +133,7 @@ interface horasExp {
     NumPaletsCompleto: number;
     NumCajasPico:number;
     NombreCliente: string;
+    NumPedido: string;
 }
 
 interface expCamion {
@@ -502,7 +503,15 @@ async function getPedidosMercadona(token: string, startDate: string): Promise<Li
 
     try {
         const lineasVenta = await fetchApiData<LineasVentaMercadona>(apiEndpoint, token);
-        const lineasConProducto = lineasVenta.filter(linea => linea.No && linea.No.trim() !== '');
+        const lineasConProducto = lineasVenta.filter(linea => {
+            if (linea.NombreCliente === 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA' && linea.Plataforma === 'VILA NOVA DE GAIA') {
+                return false;
+            }
+            if (linea.NombreCliente === 'MERCADONA SA' && linea.Plataforma === 'ALBALAT DELS SORELLS') {
+                return false;
+            }
+            return linea.No && linea.No.trim() !== '';
+        });
 
         const lineasFiltradas: LineasVentaMercadonaFiltrada[] = lineasConProducto.map(linea => {
             return {
@@ -590,11 +599,12 @@ async function getHorasCarga(token: string, date: Date) {
 
             const plataformas: ExpedicionPorPlataforma[] = Object.entries(groupedByPlataforma).map(([plataforma, productos]) => ({
                 plataforma,
-                productos: productos.map(({ No, NumPaletsCompleto, NumCajasPico, Numero }) => ({
+                productos: productos.map(({ No, NumPaletsCompleto, NumCajasPico, Numero, NumPedido }) => ({
                     No,
                     NumPaletsCompleto,
                     NumCajasPico,
-                    Numero
+                    Numero,
+                    NumPedido,
                 })),
             }));
 
