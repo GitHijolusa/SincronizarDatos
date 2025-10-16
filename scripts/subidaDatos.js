@@ -213,6 +213,7 @@ function agruparPedidosMercadona(lineasVenta) {
                     ModeloPalets: linea.ModeloPalets,
                     ModeloCajas: linea.ModeloCajas,
                     isChecked: false,
+                    numPedido: linea.numPedido,
                 });
             }
         });
@@ -232,10 +233,10 @@ function agruparPedidosMercadona(lineasVenta) {
             productos: Object.entries(microAgrupado).map(function (_a) {
                 var plataforma = _a[0], productos = _a[1];
                 var groupedSubProducts = (0, lodash_1.groupBy)(productos, 'Producto');
-                var subProductosAgregados = Object.entries(groupedSubProducts).map(function (_a) {
+                var subProductosAgregados = Object.entries(groupedSubProducts).map(function (_a, index) {
                     var productName = _a[0], productEntries = _a[1];
                     var firstEntry = productEntries[0];
-                    return productEntries.reduce(function (acc, current) {
+                    var aggregated = productEntries.reduce(function (acc, current) {
                         acc.cantidad += current.Cantidad;
                         acc.Kg += current.Kg;
                         acc.Palets += current.Palets;
@@ -254,7 +255,10 @@ function agruparPedidosMercadona(lineasVenta) {
                         ModeloPalets: firstEntry.ModeloPalets,
                         ModeloCajas: firstEntry.ModeloCajas,
                         isChecked: false,
+                        numPedido: firstEntry.numPedido,
                     });
+                    aggregated.linea = aggregated.linea * 1000 + index;
+                    return aggregated;
                 });
                 return {
                     plataforma: plataforma,
@@ -311,9 +315,9 @@ function getPedidos(token, customerType) {
                     TenDaysAgo.setDate(today.getDate() - 10);
                     formattedDateForQuery = formatDate(TenDaysAgo);
                     apiPath = 'ConsultaLineasVenta';
-                    tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS'];
+                    tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS'];
                     filtroTipoCliente = tipoCliente.map(function (tipo) { return "TipoCliente eq '".concat(tipo, "'"); }).join(' or ');
-                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=startswith(Document_No, 'PV') and (").concat(filtroTipoCliente, ") and Order_Date ge ").concat(formattedDateForQuery);
+                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (").concat(filtroTipoCliente, ") and Order_Date ge ").concat(formattedDateForQuery);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -335,6 +339,10 @@ function getPedidos(token, customerType) {
                             if (tipoCliente === 'REPARTO') {
                                 var clientesRepartoPermitidos = ['CASA BLAS, S.A.', 'LA BAÑEZA FRUTAS Y VERDURAS SL'];
                                 return clientesRepartoPermitidos.includes(cliente);
+                            }
+                            if (tipoCliente === 'OTROS') {
+                                var otrosClientesPermitidos = ['CLIENTE LOTES REPARTO'];
+                                return otrosClientesPermitidos.includes(cliente);
                             }
                             var clientesExcluidos = [
                                 'MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA',
@@ -441,9 +449,9 @@ function getPedidosMercadona(token, startDate) {
 }
 function getHorasCarga(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDireccionesEnvio, urlExp, urlDirecciones, filtroExpCam, urlExpCamion, urlProveedores, horasCarga, direcciones, direccionesMap_1, expedicionesConCiudad, groupedByHora, result, error_4;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDireccionesEnvio, urlExp, urlDirecciones, filtroExpCam, urlExpCamion, urlProveedores, horasCarga, _a, direcciones, expedicionesCamion, proveedores, direccionesMap_1, proveedoresMap_1, conductoresMap_1, expedicionesConCiudad, expedicionesConConductor, groupedByHora, result, error_4;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     formattedDate = formatDate(date);
                     clientes = ['MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA'];
@@ -457,26 +465,32 @@ function getHorasCarga(token, date) {
                     filtroExpCam = "Expediciones?$filter=(FechaEnvio eq ".concat(formattedDate, ")");
                     urlExpCamion = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(filtroExpCam);
                     urlProveedores = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/Proveedores");
-                    _a.label = 1;
+                    _b.label = 1;
                 case 1:
-                    _a.trys.push([1, 4, , 5]);
+                    _b.trys.push([1, 4, , 5]);
                     return [4 /*yield*/, fetchApiData(urlExp, token)];
                 case 2:
-                    horasCarga = _a.sent();
+                    horasCarga = _b.sent();
                     if (horasCarga.length === 0) {
                         console.log("No se encontraron horas de carga para la fecha ".concat(formattedDate, "."));
                         return [2 /*return*/, []]; // Devuelve un array vacío si no hay datos
                     }
                     return [4 /*yield*/, Promise.all([
                             fetchApiData(urlDirecciones, token),
-                            //fetchApiData<expCamion>(urlExpCamion, token),
-                            //fetchApiData<Proveedores>(urlProveedores, token)
+                            fetchApiData(urlExpCamion, token),
+                            fetchApiData(urlProveedores, token)
                         ])];
                 case 3:
-                    direcciones = (_a.sent())[0];
+                    _a = _b.sent(), direcciones = _a[0], expedicionesCamion = _a[1], proveedores = _a[2];
                     direccionesMap_1 = new Map(direcciones.map(function (d) { return [d.Code, d.City]; }));
+                    proveedoresMap_1 = new Map(proveedores.map(function (p) { return [p.No, p.Name]; }));
+                    conductoresMap_1 = new Map(expedicionesCamion.map(function (e) {
+                        var conductorName = proveedoresMap_1.get(e.Shipping_Agent_Code) || e.Name || e.Shipping_Agent_Code;
+                        return [e.Numero, conductorName];
+                    }));
                     expedicionesConCiudad = horasCarga.map(function (exp) { return (__assign(__assign({}, exp), { Plataforma: direccionesMap_1.get(exp.Plataforma) || exp.Plataforma })); });
-                    groupedByHora = (0, lodash_1.groupBy)(expedicionesConCiudad, 'HoraCarga');
+                    expedicionesConConductor = expedicionesConCiudad.map(function (exp) { return (__assign(__assign({}, exp), { Conductor: conductoresMap_1.get(exp.Numero) || '' })); });
+                    groupedByHora = (0, lodash_1.groupBy)(expedicionesConConductor, 'HoraCarga');
                     result = Object.entries(groupedByHora).map(function (_a) {
                         var horaCarga = _a[0], items = _a[1];
                         var groupedByPlataforma = (0, lodash_1.groupBy)(items, 'Plataforma');
@@ -485,13 +499,14 @@ function getHorasCarga(token, date) {
                             return ({
                                 plataforma: plataforma,
                                 productos: productos.map(function (_a) {
-                                    var No = _a.No, NumPaletsCompleto = _a.NumPaletsCompleto, NumCajasPico = _a.NumCajasPico, Numero = _a.Numero, NumPedido = _a.NumPedido;
+                                    var No = _a.No, NumPaletsCompleto = _a.NumPaletsCompleto, NumCajasPico = _a.NumCajasPico, Numero = _a.Numero, NumPedido = _a.NumPedido, Conductor = _a.Conductor;
                                     return ({
                                         No: No,
                                         NumPaletsCompleto: NumPaletsCompleto,
                                         NumCajasPico: NumCajasPico,
                                         Numero: Numero,
                                         NumPedido: NumPedido,
+                                        Conductor: Conductor,
                                     });
                                 }),
                             });
@@ -513,7 +528,7 @@ function getHorasCarga(token, date) {
                     }).filter(function (expedicion) { return expedicion.plataformas.length > 0; });
                     return [2 /*return*/, result];
                 case 4:
-                    error_4 = _a.sent();
+                    error_4 = _b.sent();
                     if (error_4 instanceof Error) {
                         console.error("Ha ocurrido un error al obtener las horas carga Mercadona para la fecha ".concat(formattedDate, ":"), error_4.message);
                     }

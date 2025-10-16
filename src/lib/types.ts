@@ -5,6 +5,8 @@ export type SelectedTab = 'ayer' | 'hoy' | 'mañana' | 'pasado mañana' | 'hace2
 
 
 export interface Product {
+  numPedido: any;
+  productos: never[];
   linea: number;
   name: string;
   quantity: number;

@@ -4,6 +4,7 @@ import { ExpedicionAgrupada, ExpedicionPorPlataforma } from '../src/lib/types';
 import { database } from '../firebaseConfig.js';
 import { ref, update, get, set } from 'firebase/database';
 import { groupBy, isEqual } from 'lodash';
+import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../src/config/client-rules';
 
 // --- INTERFACES ---
 
@@ -328,6 +329,7 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
                     ModeloPalets: linea.ModeloPalets,
                     ModeloCajas: linea.ModeloCajas,
                     isChecked: false,
+                    numPedido: linea.numPedido,
                 });
             }
         });
@@ -351,9 +353,9 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
             productos: Object.entries(microAgrupado).map(([plataforma, productos]) => {
                 const groupedSubProducts = groupBy(productos, 'Producto');
 
-                const subProductosAgregados = Object.entries(groupedSubProducts).map(([productName, productEntries]) => {
+                const subProductosAgregados = Object.entries(groupedSubProducts).map(([productName, productEntries], index) => {
                     const firstEntry = productEntries[0];
-                    return productEntries.reduce((acc, current) => {
+                    const aggregated = productEntries.reduce((acc, current) => {
                         acc.cantidad += current.Cantidad;
                         acc.Kg += current.Kg;
                         acc.Palets += current.Palets;
@@ -372,7 +374,11 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
                         ModeloPalets: firstEntry.ModeloPalets,
                         ModeloCajas: firstEntry.ModeloCajas,
                         isChecked: false,
+                        numPedido: firstEntry.numPedido,
                     });
+
+                    aggregated.linea = aggregated.linea * 1000 + index;
+                    return aggregated;
                 });
 
                 return {
@@ -421,9 +427,9 @@ async function getPedidos(token: string, customerType?: 'mercadona'): Promise<Li
     const formattedDateForQuery = formatDate(TenDaysAgo);
     
     const apiPath = 'ConsultaLineasVenta';
-    const tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS'];
+    const tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS'];
     const filtroTipoCliente = tipoCliente.map(tipo => `TipoCliente eq '${tipo}'`).join(' or ');
-    const apiEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiPath}?$filter=startswith(Document_No, 'PV') and (${filtroTipoCliente}) and Order_Date ge ${formattedDateForQuery}`;
+    const apiEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiPath}?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (${filtroTipoCliente}) and Order_Date ge ${formattedDateForQuery}`;
 
     try {
         const allLineasVenta = await fetchApiData<LineasVentaAPI>(apiEndpoint, token);
@@ -442,18 +448,12 @@ async function getPedidos(token: string, customerType?: 'mercadona'): Promise<Li
                 const tipoCliente = linea.TipoCliente;
                 
                 if (tipoCliente === 'REPARTO') {
-                    const clientesRepartoPermitidos = ['CASA BLAS, S.A.', 'LA BAÑEZA FRUTAS Y VERDURAS SL'];
                     return clientesRepartoPermitidos.includes(cliente);
                 }
 
-                const clientesExcluidos = [
-                    'MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA', 
-                    'SOCIEDAD DE COMPRAS MODERNAS, S.A', 'GUFRESCO, S.L.',
-                    'JERÓNIMO MARTINS', 'LUZ GENERAL TRADING LLC', 'SERVICIOS HORTOFRUTICULAS DE LEVANTE, S.L',
-                    'CONDIS SUPERMERCATS, S.A.', 'FERNANDO Y TOMAS, S.L.', 'N. 751 REYPAMA S.A.T.', 'FRUTAS PATRICIA PILAR, S.A.',
-                    'PATATAS LOZANO S.L.U.', 'ALCAMPO, S.A.', 'CASA AMETLLER, S.L.', 'AGRICOLA VILLENA S.L.',
-                    'ALDI SAN ISIDRO SUPERMERCADOS, S.L. (SIS)'
-                ];
+                if (tipoCliente === 'OTROS') {
+                    return otrosClientesPermitidos.includes(cliente);
+                }
                 
                 return !clientesExcluidos.includes(cliente);
             });
@@ -568,43 +568,44 @@ async function getHorasCarga(token: string, date: Date) {
             return []; // Devuelve un array vacío si no hay datos
         }
 
-        const [direcciones] = await Promise.all([
+        const [direcciones, expedicionesCamion, proveedores] = await Promise.all([
             fetchApiData<Direccion>(urlDirecciones, token),
-            //fetchApiData<expCamion>(urlExpCamion, token),
-            //fetchApiData<Proveedores>(urlProveedores, token)
+            fetchApiData<expCamion>(urlExpCamion, token),
+            fetchApiData<Proveedores>(urlProveedores, token)
         ]);
 
         const direccionesMap = new Map(direcciones.map(d => [d.Code, d.City]));
-        //const proveedoresMap = new Map(proveedores.map(p => [p.No, p.Name]));
+        const proveedoresMap = new Map(proveedores.map(p => [p.No, p.Name]));
 
-        /**const conductoresMap = new Map(expedicionesCamion.map(e => {
+        const conductoresMap = new Map(expedicionesCamion.map(e => {
             const conductorName = proveedoresMap.get(e.Shipping_Agent_Code) || e.Name || e.Shipping_Agent_Code;
             return [e.Numero, conductorName];
-        }));**/
+        }));
 
         const expedicionesConCiudad = horasCarga.map(exp => ({
             ...exp,
             Plataforma: direccionesMap.get(exp.Plataforma) || exp.Plataforma
         }));
 
-        /**const expedicionesConConductor = expedicionesConCiudad.map(exp => ({
+        const expedicionesConConductor = expedicionesConCiudad.map(exp => ({
             ...exp,
             Conductor: conductoresMap.get(exp.Numero) || ''
-        }));**/
+        }));
 
-        const groupedByHora = groupBy(expedicionesConCiudad, 'HoraCarga');
+        const groupedByHora = groupBy(expedicionesConConductor, 'HoraCarga');
 
         const result: ExpedicionAgrupada[] = Object.entries(groupedByHora).map(([horaCarga, items]) => {
             const groupedByPlataforma = groupBy(items, 'Plataforma');
 
             const plataformas: ExpedicionPorPlataforma[] = Object.entries(groupedByPlataforma).map(([plataforma, productos]) => ({
                 plataforma,
-                productos: productos.map(({ No, NumPaletsCompleto, NumCajasPico, Numero, NumPedido }) => ({
+                productos: productos.map(({ No, NumPaletsCompleto, NumCajasPico, Numero, NumPedido, Conductor }) => ({
                     No,
                     NumPaletsCompleto,
                     NumCajasPico,
                     Numero,
                     NumPedido,
+                    Conductor,
                 })),
             }));
 
@@ -940,7 +941,3 @@ async function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
-
-    
-
-    
