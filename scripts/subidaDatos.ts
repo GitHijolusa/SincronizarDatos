@@ -4,7 +4,7 @@ import { ExpedicionAgrupada, ExpedicionPorPlataforma } from '../src/lib/types';
 import { database } from '../firebaseConfig.js';
 import { ref, update, get, set } from 'firebase/database';
 import { groupBy, isEqual } from 'lodash';
-import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../config/client-rules';
+import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../config/clientes_config';
 
 // --- INTERFACES ---
 
@@ -228,6 +228,7 @@ async function getAccessToken(): Promise<string> {
     }
 }
 
+//Función para agrupar los pedidos diarios
 function agruparPedidos(lineasVenta: LineasVentaFiltrada[], horasCargaPedido: Map<string, string[]>): PedidoAgrupado[] {
     const pedidosAgrupados: { [key: string]: PedidoAgrupado } = {};
 
@@ -272,6 +273,7 @@ function agruparPedidos(lineasVenta: LineasVentaFiltrada[], horasCargaPedido: Ma
     return Object.values(pedidosAgrupados);
 }
 
+//Función que agrupa los pedidos de Mercadona por plataforma
 function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
     const specialProductPrefixes = ["PV", "BT"];
 
@@ -419,7 +421,7 @@ async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
     return data.value as T[];
 }
 
-
+//Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
 async function getPedidos(token: string, customerType?: 'mercadona'): Promise<LineasVentaFiltrada[]> {
     const today = new Date();
     const TenDaysAgo = new Date(today);
@@ -494,7 +496,7 @@ async function getPedidos(token: string, customerType?: 'mercadona'): Promise<Li
     }
 }
 
-
+//Función para obtener los pedidos de Mercadona
 async function getPedidosMercadona(token: string, startDate: string): Promise<LineasVentaMercadonaFiltrada[]> {
     const apiPath = 'ConsultaLineasVenta'
     const cliente = ['C-00133', 'C-00656']
@@ -543,6 +545,7 @@ async function getPedidosMercadona(token: string, startDate: string): Promise<Li
     }
 }
 
+//Función para obtener las expediciones por hora de carga y plataforma
 async function getHorasCarga(token: string, date: Date) {
     const formattedDate = formatDate(date);
     const clientes = ['MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA'];
@@ -660,6 +663,7 @@ function enrichProductsWithClientNames(products: ClienteProductoAPI[]): Enriched
       return productosAgrupados;
   }
 
+//Función que obtiene los productos de cliente de la lista embalaje cliente/producto para seleccionar los productos de sobras
 async function getProductosCliente () {
 
     const idClientes = ['C-00429', 'C-00988', 'C-01142', 'C-00071'];
