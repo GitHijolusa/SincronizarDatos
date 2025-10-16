@@ -4,7 +4,7 @@ import { ExpedicionAgrupada, ExpedicionPorPlataforma } from '../src/lib/types';
 import { database } from '../firebaseConfig.js';
 import { ref, update, get, set } from 'firebase/database';
 import { groupBy, isEqual } from 'lodash';
-import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../src/config/client-rules';
+import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../config/client-rules';
 
 // --- INTERFACES ---
 
