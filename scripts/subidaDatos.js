@@ -61,6 +61,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var firebaseConfig_js_1 = require("../firebaseConfig.js");
 var database_1 = require("firebase/database");
 var lodash_1 = require("lodash");
+var clientes_config_1 = require("../config/clientes_config");
 // --- CONFIGURACIÓN ---
 var tokenEndpoint = 'https://login.microsoftonline.com/eaef5c77-b0af-4131-81cf-ceb195e3389c/oauth2/v2.0/token';
 var baseUrl = 'https://api.businesscentral.dynamics.com/v2.0/eaef5c77-b0af-4131-81cf-ceb195e3389c/Production/ODataV4/';
@@ -124,6 +125,7 @@ function getAccessToken() {
         });
     });
 }
+//Función para agrupar los pedidos diarios
 function agruparPedidos(lineasVenta, horasCargaPedido) {
     var pedidosAgrupados = {};
     lineasVenta.forEach(function (linea) {
@@ -162,6 +164,7 @@ function agruparPedidos(lineasVenta, horasCargaPedido) {
     });
     return Object.values(pedidosAgrupados);
 }
+//Función que agrupa los pedidos de Mercadona por plataforma
 function agruparPedidosMercadona(lineasVenta) {
     var _a, _b, _c;
     var specialProductPrefixes = ["PV", "BT"];
@@ -304,6 +307,7 @@ function fetchApiData(apiUrl, token) {
         });
     });
 }
+//Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
 function getPedidos(token, customerType) {
     return __awaiter(this, void 0, void 0, function () {
         var today, TenDaysAgo, formattedDateForQuery, apiPath, tipoCliente, filtroTipoCliente, apiEndpoint, allLineasVenta, lineasConProducto, lineasPorCliente, lineasFiltradas, error_2;
@@ -337,22 +341,12 @@ function getPedidos(token, customerType) {
                             var cliente = linea.NombreCliente;
                             var tipoCliente = linea.TipoCliente;
                             if (tipoCliente === 'REPARTO') {
-                                var clientesRepartoPermitidos = ['CASA BLAS, S.A.', 'LA BAÑEZA FRUTAS Y VERDURAS SL'];
-                                return clientesRepartoPermitidos.includes(cliente);
+                                return clientes_config_1.clientesRepartoPermitidos.includes(cliente);
                             }
                             if (tipoCliente === 'OTROS') {
-                                var otrosClientesPermitidos = ['CLIENTE LOTES REPARTO'];
-                                return otrosClientesPermitidos.includes(cliente);
+                                return clientes_config_1.otrosClientesPermitidos.includes(cliente);
                             }
-                            var clientesExcluidos = [
-                                'MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA',
-                                'SOCIEDAD DE COMPRAS MODERNAS, S.A', 'GUFRESCO, S.L.',
-                                'JERÓNIMO MARTINS', 'LUZ GENERAL TRADING LLC', 'SERVICIOS HORTOFRUTICULAS DE LEVANTE, S.L',
-                                'CONDIS SUPERMERCATS, S.A.', 'FERNANDO Y TOMAS, S.L.', 'N. 751 REYPAMA S.A.T.', 'FRUTAS PATRICIA PILAR, S.A.',
-                                'PATATAS LOZANO S.L.U.', 'ALCAMPO, S.A.', 'CASA AMETLLER, S.L.', 'AGRICOLA VILLENA S.L.',
-                                'ALDI SAN ISIDRO SUPERMERCADOS, S.L. (SIS)'
-                            ];
-                            return !clientesExcluidos.includes(cliente);
+                            return !clientes_config_1.clientesExcluidos.includes(cliente);
                         });
                     }
                     lineasFiltradas = lineasPorCliente.map(function (linea) {
@@ -391,6 +385,7 @@ function getPedidos(token, customerType) {
         });
     });
 }
+//Función para obtener los pedidos de Mercadona
 function getPedidosMercadona(token, startDate) {
     return __awaiter(this, void 0, void 0, function () {
         var apiPath, cliente, filtroCliente, apiEndpoint, lineasVenta, lineasConProducto, lineasFiltradas, error_3;
@@ -447,6 +442,7 @@ function getPedidosMercadona(token, startDate) {
         });
     });
 }
+//Función para obtener las expediciones por hora de carga y plataforma
 function getHorasCarga(token, date) {
     return __awaiter(this, void 0, void 0, function () {
         var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDireccionesEnvio, urlExp, urlDirecciones, filtroExpCam, urlExpCamion, urlProveedores, horasCarga, _a, direcciones, expedicionesCamion, proveedores, direccionesMap_1, proveedoresMap_1, conductoresMap_1, expedicionesConCiudad, expedicionesConConductor, groupedByHora, result, error_4;
@@ -556,6 +552,7 @@ function groupProducts(products) {
     });
     return productosAgrupados;
 }
+//Función que obtiene los productos de cliente de la lista embalaje cliente/producto para seleccionar los productos de sobras
 function getProductosCliente() {
     return __awaiter(this, void 0, void 0, function () {
         var idClientes, filtroClientes, apiEmbalajeClienteProducto, embalajeEndpoint, token, embalajeProducts, enrichedProducts, productosAgrupados, error_5;

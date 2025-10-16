@@ -1,4 +1,3 @@
-
 export const clientesRepartoPermitidos: string[] = ['CASA BLAS, S.A.', 'LA BAÑEZA FRUTAS Y VERDURAS SL'];
 
 export const otrosClientesPermitidos: string[] = ['CLIENTE LOTES REPARTO'];
