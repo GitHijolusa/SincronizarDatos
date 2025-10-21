@@ -375,7 +375,7 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
     
             return {
                 plataforma: plataforma,
-                numPedido: pedidoLines[0].numPedido, // Keep original numPedido for context
+                numPedido: pedidoLines[0].numPedido,
                 subProductos: subProductosAgregados,
             };
         });
@@ -855,9 +855,10 @@ async function main() {
                             let mergedOrder: any;
 
                             if (pedidoApi.plataforma === 'MICRO') {
-                                // Lógica de fusión específica para MICRO
                                 const newProductos = pedidoApi.productos.map((apiPlat: any) => {
-                                    const existingPlat = (existingOrder.productos || []).find((p: any) => p.plataforma === apiPlat.plataforma && p.numPedido === apiPlat.numPedido) || {};
+                                    // Usar plataforma y numPedido como clave única
+                                    const platKey = `${apiPlat.plataforma}-${apiPlat.numPedido}`;
+                                    const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma}-${p.numPedido}` === platKey) || {};
                                     
                                     const subProductosMap = new Map();
                                     (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.producto, sub));
@@ -865,7 +866,7 @@ async function main() {
                                     const newSubProductos = apiPlat.subProductos.map((apiSub: any) => {
                                         const existingSub = subProductosMap.get(apiSub.producto);
                                         return {
-                                            ...apiSub, // Datos de la API son la base
+                                            ...apiSub,
                                             checkState: existingSub?.checkState ?? 'unchecked',
                                             note: existingSub?.note ?? '',
                                             variedad: existingSub?.variedad ?? '',
@@ -956,3 +957,5 @@ async function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
+
+    
