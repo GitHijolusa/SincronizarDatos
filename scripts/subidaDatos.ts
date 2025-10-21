@@ -340,8 +340,46 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
     let finalResponse = Object.values(pedidosAgrupados);
 
     if (specialProducts.length > 0) {
-        const microAgrupado = groupBy(specialProducts, 'Plataforma');
-        
+        const pedidosEspecialesAgrupados = groupBy(specialProducts, 'numPedido');
+    
+        const productosMicro = Object.values(pedidosEspecialesAgrupados).flatMap(pedidoLines => {
+            const plataforma = pedidoLines[0]?.Plataforma || 'Desconocida';
+            const groupedSubProducts = groupBy(pedidoLines, 'Producto');
+    
+            const subProductosAgregados = Object.entries(groupedSubProducts).map(([productName, productEntries], index) => {
+                const firstEntry = productEntries[0];
+                const aggregated = productEntries.reduce((acc, current) => {
+                    acc.cantidad += current.Cantidad;
+                    acc.Kg += current.Kg;
+                    acc.Palets += current.Palets;
+                    acc.Cajas += current.Cajas;
+                    acc.CdadcajaTotal += current.CdadcajaTotal;
+                    return acc;
+                }, {
+                    linea: firstEntry.Linea,
+                    producto: firstEntry.Producto,
+                    descripcion: firstEntry.Descripcion,
+                    cantidad: 0,
+                    Kg: 0,
+                    Palets: 0,
+                    Cajas: 0,
+                    CdadcajaTotal: 0,
+                    ModeloPalets: firstEntry.ModeloPalets,
+                    ModeloCajas: firstEntry.ModeloCajas,
+                    isChecked: false,
+                    numPedido: firstEntry.numPedido,
+                });
+                aggregated.linea = aggregated.linea * 1000 + index;
+                return aggregated;
+            });
+    
+            return {
+                plataforma: plataforma,
+                numPedido: pedidoLines[0].numPedido, // Keep original numPedido for context
+                subProductos: subProductosAgregados,
+            };
+        });
+    
         const microCard = {
             numPedido: 'MICRO',
             cliente: specialProducts[0]?.Cliente || 'MERCADONA SA',
@@ -350,41 +388,7 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
             plataforma: 'MICRO',
             status: 'Pendiente',
             isManual: false,
-            productos: Object.entries(microAgrupado).map(([plataforma, productos]) => {
-                const groupedSubProducts = groupBy(productos, 'Producto');
-
-                const subProductosAgregados = Object.entries(groupedSubProducts).map(([productName, productEntries], index) => {
-                    const firstEntry = productEntries[0];
-                    const aggregated = productEntries.reduce((acc, current) => {
-                        acc.cantidad += current.Cantidad;
-                        acc.Kg += current.Kg;
-                        acc.Palets += current.Palets;
-                        acc.Cajas += current.Cajas;
-                        acc.CdadcajaTotal += current.CdadcajaTotal;
-                        return acc;
-                    }, {
-                        linea: firstEntry.Linea, 
-                        producto: firstEntry.Producto,
-                        descripcion: firstEntry.Descripcion,
-                        cantidad: 0,
-                        Kg: 0,
-                        Palets: 0,
-                        Cajas: 0,
-                        CdadcajaTotal: 0,
-                        ModeloPalets: firstEntry.ModeloPalets,
-                        ModeloCajas: firstEntry.ModeloCajas,
-                        isChecked: false,
-                        numPedido: firstEntry.numPedido,
-                    });
-                     aggregated.linea = aggregated.linea * 1000 + index;
-                    return aggregated;
-                });
-
-                return {
-                    plataforma: plataforma,
-                    subProductos: subProductosAgregados,
-                };
-            }),
+            productos: productosMicro,
         };
         finalResponse.push(microCard);
     }
@@ -853,7 +857,7 @@ async function main() {
                             if (pedidoApi.plataforma === 'MICRO') {
                                 // Lógica de fusión específica para MICRO
                                 const newProductos = pedidoApi.productos.map((apiPlat: any) => {
-                                    const existingPlat = (existingOrder.productos || []).find((p: any) => p.plataforma === apiPlat.plataforma) || {};
+                                    const existingPlat = (existingOrder.productos || []).find((p: any) => p.plataforma === apiPlat.plataforma && p.numPedido === apiPlat.numPedido) || {};
                                     
                                     const subProductosMap = new Map();
                                     (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.producto, sub));
@@ -952,5 +956,3 @@ async function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
-
-    
