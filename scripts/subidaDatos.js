@@ -398,7 +398,7 @@ function getPedidosMercadona(token, startDate) {
                     apiPath = 'ConsultaLineasVenta';
                     cliente = ['C-00133', 'C-00656'];
                     filtroCliente = cliente.map(function (id) { return "Sell_to_Customer_No eq '".concat(id, "'"); }).join(' or ');
-                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=(").concat(filtroCliente, ") and Order_Date ge ").concat(startDate);
+                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=startswith(Document_No, 'PV') and (").concat(filtroCliente, ") and Order_Date ge ").concat(startDate);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -747,6 +747,9 @@ function main() {
                                                     return __assign(__assign({}, apiPlat), { subProductos: newSubProductos });
                                                 });
                                                 mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
+                                                if (existingOrder_1.status) {
+                                                    mergedOrder.status = existingOrder_1.status;
+                                                }
                                             }
                                             else {
                                                 // Lógica de fusión para pedidos normales de Mercadona
@@ -758,6 +761,9 @@ function main() {
                                                     return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.origen) !== null && _d !== void 0 ? _d : '' });
                                                 });
                                                 mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
+                                                if (existingOrder_1.status) {
+                                                    mergedOrder.status = existingOrder_1.status;
+                                                }
                                             }
                                             if (!(0, lodash_1.isEqual)(existingOrder_1, mergedOrder)) {
                                                 mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(originalIndex)] = mergedOrder;

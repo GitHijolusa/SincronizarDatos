@@ -503,7 +503,7 @@ async function getPedidosMercadona(token: string, startDate: string): Promise<Li
     const apiPath = 'ConsultaLineasVenta'
     const cliente = ['C-00133', 'C-00656']
     const filtroCliente = cliente.map(id => `Sell_to_Customer_No eq '${id}'`).join(' or ')
-    const apiEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiPath}?$filter=(${filtroCliente}) and Order_Date ge ${startDate}`
+    const apiEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiPath}?$filter=startswith(Document_No, 'PV') and (${filtroCliente}) and Order_Date ge ${startDate}`
 
     try {
         const lineasVenta = await fetchApiData<LineasVentaMercadona>(apiEndpoint, token);
@@ -700,7 +700,7 @@ async function main() {
         const token = await getAccessToken();
         const today = new Date();
         const tenDaysAgo = new Date(today);
-        tenDaysAgo.setDate(today.getDate() - 5);
+        tenDaysAgo.setDate(today.getDate() - 10);
         const formattedTenDaysAgo = formatDate(tenDaysAgo);
 
         // --- PEDIDOS GENERALES ---
@@ -855,11 +855,28 @@ async function main() {
                             let mergedOrder: any;
 
                             if (pedidoApi.plataforma === 'MICRO') {
-                                const newProductos = pedidoApi.productos.map((apiPlat: any) => {
-                                    // Usar plataforma y numPedido como clave única
+                                const platKey = `${pedidoApi.plataforma}-${pedidoApi.numPedido}`;
+                                const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma}-${p.numPedido}` === platKey) || {};
+                                
+                                const subProductosMap = new Map();
+                                (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.producto, sub));
+
+                                const newSubProductos = pedidoApi.productos.flatMap((apiPlat: any) => 
+                                    apiPlat.subProductos.map((apiSub: any) => {
+                                        const existingSub = subProductosMap.get(apiSub.producto);
+                                        return {
+                                            ...apiSub,
+                                            checkState: existingSub?.checkState ?? 'unchecked',
+                                            note: existingSub?.note ?? '',
+                                            variedad: existingSub?.variedad ?? '',
+                                            origen: existingSub?.origen ?? ''
+                                        };
+                                    })
+                                );
+
+                                const newProductos = pedidoApi.productos.map((apiPlat:any) => {
                                     const platKey = `${apiPlat.plataforma}-${apiPlat.numPedido}`;
                                     const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma}-${p.numPedido}` === platKey) || {};
-                                    
                                     const subProductosMap = new Map();
                                     (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.producto, sub));
 
@@ -873,11 +890,10 @@ async function main() {
                                             origen: existingSub?.origen ?? ''
                                         };
                                     });
-
                                     return {
                                         ...apiPlat,
-                                        subProductos: newSubProductos
-                                    };
+                                        subProductos: newSubProductos,
+                                    }
                                 });
                                 
                                 mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
