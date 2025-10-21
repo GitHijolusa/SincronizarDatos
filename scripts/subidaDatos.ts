@@ -353,7 +353,7 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
             productos: Object.entries(microAgrupado).map(([plataforma, productos]) => {
                 const groupedSubProducts = groupBy(productos, 'Producto');
 
-                const subProductosAgregados = Object.entries(groupedSubProducts).map(([productName, productEntries]) => {
+                const subProductosAgregados = Object.entries(groupedSubProducts).map(([productName, productEntries], index) => {
                     const firstEntry = productEntries[0];
                     const aggregated = productEntries.reduce((acc, current) => {
                         acc.cantidad += current.Cantidad;
@@ -363,8 +363,7 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
                         acc.CdadcajaTotal += current.CdadcajaTotal;
                         return acc;
                     }, {
-                        // Generar un ID único combinando la línea original y el índice
-                        linea: 0, // Será reemplazado después
+                        linea: firstEntry.Linea, 
                         producto: firstEntry.Producto,
                         descripcion: firstEntry.Descripcion,
                         cantidad: 0,
@@ -377,10 +376,7 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
                         isChecked: false,
                         numPedido: firstEntry.numPedido,
                     });
-
-                    // Asignar un ID de línea único para evitar colisiones
-                    aggregated.linea = productEntries.reduce((sum, p) => sum + p.Linea, 0) + productEntries.length;
-
+                     aggregated.linea = aggregated.linea * 1000 + index;
                     return aggregated;
                 });
 
@@ -406,6 +402,7 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
 
     return finalResponse;
 }
+
 
 // --- FUNCIONES PRINCIPALES DE OBTENCIÓN DE DATOS ---
 
@@ -851,11 +848,42 @@ async function main() {
                             // Pedido existente, fusionar y comprobar cambios
                             const { originalIndex, ...existingOrder } = existingOrderData;
 
-                            const mergedOrder = {
-                                ...pedidoApi,
-                                ...existingOrder,
-                                productos: (pedidoApi.productos || []).map((apiProduct: any) => {
-                                    const existingProduct = (existingOrder.productos || []).find((p: any) => p.linea === apiProduct.linea);
+                            let mergedOrder: any;
+
+                            if (pedidoApi.plataforma === 'MICRO') {
+                                // Lógica de fusión específica para MICRO
+                                const newProductos = pedidoApi.productos.map((apiPlat: any) => {
+                                    const existingPlat = (existingOrder.productos || []).find((p: any) => p.plataforma === apiPlat.plataforma) || {};
+                                    
+                                    const subProductosMap = new Map();
+                                    (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.producto, sub));
+
+                                    const newSubProductos = apiPlat.subProductos.map((apiSub: any) => {
+                                        const existingSub = subProductosMap.get(apiSub.producto);
+                                        return {
+                                            ...apiSub, // Datos de la API son la base
+                                            checkState: existingSub?.checkState ?? 'unchecked',
+                                            note: existingSub?.note ?? '',
+                                            variedad: existingSub?.variedad ?? '',
+                                            origen: existingSub?.origen ?? ''
+                                        };
+                                    });
+
+                                    return {
+                                        ...apiPlat,
+                                        subProductos: newSubProductos
+                                    };
+                                });
+                                
+                                mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
+
+                            } else {
+                                // Lógica de fusión para pedidos normales de Mercadona
+                                const productosMap = new Map();
+                                (existingOrder.productos || []).forEach((p: any) => productosMap.set(p.linea, p));
+
+                                const newProductos = (pedidoApi.productos || []).map((apiProduct: any) => {
+                                    const existingProduct = productosMap.get(apiProduct.linea);
                                     return {
                                         ...apiProduct,
                                         checkState: existingProduct?.checkState ?? 'unchecked',
@@ -863,31 +891,9 @@ async function main() {
                                         variedad: existingProduct?.variedad ?? '',
                                         origen: existingProduct?.origen ?? ''
                                     };
-                                })
-                            };
-                            
-                             if (pedidoApi.plataforma === 'MICRO' && mergedOrder.productos) {
-                                mergedOrder.productos = pedidoApi.productos.map((apiPlat: any) => {
-                                    const existingPlat = (existingOrder.productos || []).find((p: any) => p.plataforma === apiPlat.plataforma);
-                                    if (existingPlat) {
-                                        return {
-                                            ...apiPlat,
-                                            subProductos: apiPlat.subProductos.map((apiSub: any) => {
-                                                const existingSub = (existingPlat.subProductos || []).find((s: any) => s.producto === apiSub.producto);
-                                                return {
-                                                    ...apiSub,
-                                                    checkState: existingSub?.checkState ?? 'unchecked',
-                                                    note: existingSub?.note ?? '',
-                                                    variedad: existingSub?.variedad ?? '',
-                                                    origen: existingSub?.origen ?? ''
-                                                };
-                                            })
-                                        };
-                                    }
-                                    return apiPlat;
                                 });
+                                mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
                             }
-
 
                             if (!isEqual(existingOrder, mergedOrder)) {
                                 mercadonaUpdates[`mercadona/${fecha}/${originalIndex}`] = mergedOrder;
@@ -946,3 +952,5 @@ async function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
+
+    
