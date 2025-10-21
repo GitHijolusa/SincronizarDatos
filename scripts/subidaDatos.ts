@@ -881,6 +881,9 @@ async function main() {
                                 });
                                 
                                 mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
+                                if (existingOrder.status) {
+                                    mergedOrder.status = existingOrder.status;
+                                }
 
                             } else {
                                 // Lógica de fusión para pedidos normales de Mercadona
@@ -898,6 +901,9 @@ async function main() {
                                     };
                                 });
                                 mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
+                                if (existingOrder.status) {
+                                    mergedOrder.status = existingOrder.status;
+                                }
                             }
 
                             if (!isEqual(existingOrder, mergedOrder)) {
@@ -957,5 +963,3 @@ async function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
-
-    

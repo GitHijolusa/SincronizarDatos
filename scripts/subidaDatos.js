@@ -224,7 +224,44 @@ function agruparPedidosMercadona(lineasVenta) {
     processProducts(regularProducts, pedidosAgrupados);
     var finalResponse = Object.values(pedidosAgrupados);
     if (specialProducts.length > 0) {
-        var microAgrupado = (0, lodash_1.groupBy)(specialProducts, 'Plataforma');
+        var pedidosEspecialesAgrupados = (0, lodash_1.groupBy)(specialProducts, 'numPedido');
+        var productosMicro = Object.values(pedidosEspecialesAgrupados).flatMap(function (pedidoLines) {
+            var _a;
+            var plataforma = ((_a = pedidoLines[0]) === null || _a === void 0 ? void 0 : _a.Plataforma) || 'Desconocida';
+            var groupedSubProducts = (0, lodash_1.groupBy)(pedidoLines, 'Producto');
+            var subProductosAgregados = Object.entries(groupedSubProducts).map(function (_a, index) {
+                var productName = _a[0], productEntries = _a[1];
+                var firstEntry = productEntries[0];
+                var aggregated = productEntries.reduce(function (acc, current) {
+                    acc.cantidad += current.Cantidad;
+                    acc.Kg += current.Kg;
+                    acc.Palets += current.Palets;
+                    acc.Cajas += current.Cajas;
+                    acc.CdadcajaTotal += current.CdadcajaTotal;
+                    return acc;
+                }, {
+                    linea: firstEntry.Linea,
+                    producto: firstEntry.Producto,
+                    descripcion: firstEntry.Descripcion,
+                    cantidad: 0,
+                    Kg: 0,
+                    Palets: 0,
+                    Cajas: 0,
+                    CdadcajaTotal: 0,
+                    ModeloPalets: firstEntry.ModeloPalets,
+                    ModeloCajas: firstEntry.ModeloCajas,
+                    isChecked: false,
+                    numPedido: firstEntry.numPedido,
+                });
+                aggregated.linea = aggregated.linea * 1000 + index;
+                return aggregated;
+            });
+            return {
+                plataforma: plataforma,
+                numPedido: pedidoLines[0].numPedido,
+                subProductos: subProductosAgregados,
+            };
+        });
         var microCard = {
             numPedido: 'MICRO',
             cliente: ((_a = specialProducts[0]) === null || _a === void 0 ? void 0 : _a.Cliente) || 'MERCADONA SA',
@@ -233,41 +270,7 @@ function agruparPedidosMercadona(lineasVenta) {
             plataforma: 'MICRO',
             status: 'Pendiente',
             isManual: false,
-            productos: Object.entries(microAgrupado).map(function (_a) {
-                var plataforma = _a[0], productos = _a[1];
-                var groupedSubProducts = (0, lodash_1.groupBy)(productos, 'Producto');
-                var subProductosAgregados = Object.entries(groupedSubProducts).map(function (_a, index) {
-                    var productName = _a[0], productEntries = _a[1];
-                    var firstEntry = productEntries[0];
-                    var aggregated = productEntries.reduce(function (acc, current) {
-                        acc.cantidad += current.Cantidad;
-                        acc.Kg += current.Kg;
-                        acc.Palets += current.Palets;
-                        acc.Cajas += current.Cajas;
-                        acc.CdadcajaTotal += current.CdadcajaTotal;
-                        return acc;
-                    }, {
-                        linea: firstEntry.Linea,
-                        producto: firstEntry.Producto,
-                        descripcion: firstEntry.Descripcion,
-                        cantidad: 0,
-                        Kg: 0,
-                        Palets: 0,
-                        Cajas: 0,
-                        CdadcajaTotal: 0,
-                        ModeloPalets: firstEntry.ModeloPalets,
-                        ModeloCajas: firstEntry.ModeloCajas,
-                        isChecked: false,
-                        numPedido: firstEntry.numPedido,
-                    });
-                    aggregated.linea = aggregated.linea * 1000 + index;
-                    return aggregated;
-                });
-                return {
-                    plataforma: plataforma,
-                    subProductos: subProductosAgregados,
-                };
-            }),
+            productos: productosMicro,
         };
         finalResponse.push(microCard);
     }
@@ -728,23 +731,33 @@ function main() {
                                         else {
                                             // Pedido existente, fusionar y comprobar cambios
                                             var originalIndex = existingOrderData.originalIndex, existingOrder_1 = __rest(existingOrderData, ["originalIndex"]);
-                                            var mergedOrder = __assign(__assign(__assign({}, pedidoApi), existingOrder_1), { productos: (pedidoApi.productos || []).map(function (apiProduct) {
-                                                    var _a, _b, _c, _d;
-                                                    var existingProduct = (existingOrder_1.productos || []).find(function (p) { return p.linea === apiProduct.linea; });
-                                                    return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.origen) !== null && _d !== void 0 ? _d : '' });
-                                                }) });
-                                            if (pedidoApi.plataforma === 'MICRO' && mergedOrder.productos) {
-                                                mergedOrder.productos = pedidoApi.productos.map(function (apiPlat) {
-                                                    var existingPlat = (existingOrder_1.productos || []).find(function (p) { return p.plataforma === apiPlat.plataforma; });
-                                                    if (existingPlat) {
-                                                        return __assign(__assign({}, apiPlat), { subProductos: apiPlat.subProductos.map(function (apiSub) {
-                                                                var _a, _b, _c, _d;
-                                                                var existingSub = (existingPlat.subProductos || []).find(function (s) { return s.producto === apiSub.producto; });
-                                                                return __assign(__assign({}, apiSub), { checkState: (_a = existingSub === null || existingSub === void 0 ? void 0 : existingSub.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingSub === null || existingSub === void 0 ? void 0 : existingSub.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingSub === null || existingSub === void 0 ? void 0 : existingSub.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingSub === null || existingSub === void 0 ? void 0 : existingSub.origen) !== null && _d !== void 0 ? _d : '' });
-                                                            }) });
-                                                    }
-                                                    return apiPlat;
+                                            var mergedOrder = void 0;
+                                            if (pedidoApi.plataforma === 'MICRO') {
+                                                var newProductos = pedidoApi.productos.map(function (apiPlat) {
+                                                    // Usar plataforma y numPedido como clave única
+                                                    var platKey = "".concat(apiPlat.plataforma, "-").concat(apiPlat.numPedido);
+                                                    var existingPlat = (existingOrder_1.productos || []).find(function (p) { return "".concat(p.plataforma, "-").concat(p.numPedido) === platKey; }) || {};
+                                                    var subProductosMap = new Map();
+                                                    (existingPlat.subProductos || []).forEach(function (sub) { return subProductosMap.set(sub.producto, sub); });
+                                                    var newSubProductos = apiPlat.subProductos.map(function (apiSub) {
+                                                        var _a, _b, _c, _d;
+                                                        var existingSub = subProductosMap.get(apiSub.producto);
+                                                        return __assign(__assign({}, apiSub), { checkState: (_a = existingSub === null || existingSub === void 0 ? void 0 : existingSub.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingSub === null || existingSub === void 0 ? void 0 : existingSub.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingSub === null || existingSub === void 0 ? void 0 : existingSub.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingSub === null || existingSub === void 0 ? void 0 : existingSub.origen) !== null && _d !== void 0 ? _d : '' });
+                                                    });
+                                                    return __assign(__assign({}, apiPlat), { subProductos: newSubProductos });
                                                 });
+                                                mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
+                                            }
+                                            else {
+                                                // Lógica de fusión para pedidos normales de Mercadona
+                                                var productosMap_1 = new Map();
+                                                (existingOrder_1.productos || []).forEach(function (p) { return productosMap_1.set(p.linea, p); });
+                                                var newProductos = (pedidoApi.productos || []).map(function (apiProduct) {
+                                                    var _a, _b, _c, _d;
+                                                    var existingProduct = productosMap_1.get(apiProduct.linea);
+                                                    return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.origen) !== null && _d !== void 0 ? _d : '' });
+                                                });
+                                                mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
                                             }
                                             if (!(0, lodash_1.isEqual)(existingOrder_1, mergedOrder)) {
                                                 mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(originalIndex)] = mergedOrder;
