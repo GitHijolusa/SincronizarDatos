@@ -415,7 +415,7 @@ async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
     let nextLink: string | null = apiUrl;
 
     while (nextLink) {
-        const response = await fetch(nextLink, {
+        const response: Response = await fetch(nextLink, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         });
@@ -834,7 +834,7 @@ async function main() {
 
                     dataAsArray.forEach((pedido: any, index: number) => {
                         if(pedido) { 
-                             const key = pedido.plataforma === 'MICRO' ? `MICRO-${pedido.numPedido}-${index}` : pedido.plataforma.trim();
+                            const key = pedido.plataforma === 'MICRO' ? `MICRO-${pedido.numPedido}-${index}` : pedido.plataforma.trim();
                             firebaseMercadonaMap.set(key, { ...pedido, originalIndex: index });
                         }
                     });
