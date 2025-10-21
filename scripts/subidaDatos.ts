@@ -411,16 +411,26 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
 // --- FUNCIONES PRINCIPALES DE OBTENCIÓN DE DATOS ---
 
 async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
-    const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    });
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error en la petición a la API ${apiUrl}: ${response.statusText}. Respuesta: ${errorText}`);
+    let results: T[] = [];
+    let nextLink: string | null = apiUrl;
+
+    while (nextLink) {
+        const response = await fetch(nextLink, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Error en la petición a la API ${nextLink}: ${response.statusText}. Respuesta: ${errorText}`);
+        }
+
+        const data = await response.json();
+        results = results.concat(data.value as T[]);
+        nextLink = data['@odata.nextLink'] || null;
     }
-    const data = await response.json();
-    return data.value as T[];
+    
+    return results;
 }
 
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
@@ -824,7 +834,7 @@ async function main() {
 
                     dataAsArray.forEach((pedido: any, index: number) => {
                         if(pedido) { 
-                            const key = pedido.plataforma === 'MICRO' ? 'MICRO' : pedido.plataforma.trim();
+                             const key = pedido.plataforma === 'MICRO' ? `MICRO-${pedido.numPedido}-${index}` : pedido.plataforma.trim();
                             firebaseMercadonaMap.set(key, { ...pedido, originalIndex: index });
                         }
                     });
@@ -834,8 +844,8 @@ async function main() {
                     let updatedMercadonaCount = 0;
                     let nextNewIndex = dataAsArray.filter(Boolean).length;
 
-                    pedidosMercadonaApi.forEach((pedidoApi: any) => {
-                        const key = pedidoApi.plataforma === 'MICRO' ? 'MICRO' : pedidoApi.plataforma.trim();
+                    pedidosMercadonaApi.forEach((pedidoApi: any, apiIndex: number) => {
+                         const key = pedidoApi.plataforma === 'MICRO' ? `MICRO-${pedidoApi.numPedido}-${apiIndex}` : pedidoApi.plataforma.trim();
                         const existingOrderData = firebaseMercadonaMap.get(key);
 
                         if (!existingOrderData) {
@@ -855,25 +865,7 @@ async function main() {
                             let mergedOrder: any;
 
                             if (pedidoApi.plataforma === 'MICRO') {
-                                const platKey = `${pedidoApi.plataforma}-${pedidoApi.numPedido}`;
-                                const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma}-${p.numPedido}` === platKey) || {};
                                 
-                                const subProductosMap = new Map();
-                                (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.producto, sub));
-
-                                const newSubProductos = pedidoApi.productos.flatMap((apiPlat: any) => 
-                                    apiPlat.subProductos.map((apiSub: any) => {
-                                        const existingSub = subProductosMap.get(apiSub.producto);
-                                        return {
-                                            ...apiSub,
-                                            checkState: existingSub?.checkState ?? 'unchecked',
-                                            note: existingSub?.note ?? '',
-                                            variedad: existingSub?.variedad ?? '',
-                                            origen: existingSub?.origen ?? ''
-                                        };
-                                    })
-                                );
-
                                 const newProductos = pedidoApi.productos.map((apiPlat:any) => {
                                     const platKey = `${apiPlat.plataforma}-${apiPlat.numPedido}`;
                                     const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma}-${p.numPedido}` === platKey) || {};
