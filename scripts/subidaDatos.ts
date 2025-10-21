@@ -1,5 +1,3 @@
-
-
 import { ExpedicionAgrupada, ExpedicionPorPlataforma } from '../src/lib/types';
 import { database } from '../firebaseConfig.js';
 import { ref, update, get, set } from 'firebase/database';
@@ -355,7 +353,7 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
             productos: Object.entries(microAgrupado).map(([plataforma, productos]) => {
                 const groupedSubProducts = groupBy(productos, 'Producto');
 
-                const subProductosAgregados = Object.entries(groupedSubProducts).map(([productName, productEntries], index) => {
+                const subProductosAgregados = Object.entries(groupedSubProducts).map(([productName, productEntries]) => {
                     const firstEntry = productEntries[0];
                     const aggregated = productEntries.reduce((acc, current) => {
                         acc.cantidad += current.Cantidad;
@@ -365,7 +363,8 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
                         acc.CdadcajaTotal += current.CdadcajaTotal;
                         return acc;
                     }, {
-                        linea: firstEntry.Linea,
+                        // Generar un ID único combinando la línea original y el índice
+                        linea: 0, // Será reemplazado después
                         producto: firstEntry.Producto,
                         descripcion: firstEntry.Descripcion,
                         cantidad: 0,
@@ -379,7 +378,9 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
                         numPedido: firstEntry.numPedido,
                     });
 
-                    aggregated.linea = aggregated.linea * 1000 + index;
+                    // Asignar un ID de línea único para evitar colisiones
+                    aggregated.linea = productEntries.reduce((sum, p) => sum + p.Linea, 0) + productEntries.length;
+
                     return aggregated;
                 });
 
