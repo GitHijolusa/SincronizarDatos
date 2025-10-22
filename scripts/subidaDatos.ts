@@ -1,4 +1,3 @@
-
 import { ExpedicionAgrupada, ExpedicionPorPlataforma, Order, Product } from '../src/lib/types';
 import { database } from '../firebaseConfig.js';
 import { ref, update, get, set, remove } from 'firebase/database';
@@ -417,27 +416,33 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
 // --- FUNCIONES PRINCIPALES DE OBTENCIÓN DE DATOS ---
 
 async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
-    const separator = apiUrl.includes('?') ? '&' : '?';
-    const urlWithTop = `${apiUrl}${separator}$top=5000`;
+    let allData: T[] = [];
+    let nextLink: string | undefined = apiUrl;
 
-    try {
-        const response = await fetch(urlWithTop, {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        });
+    while (nextLink) {
+        try {
+            const response = await fetch(nextLink, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            });
 
-        if (!response.ok) {
-            throw new Error(`Error en la petición a la API ${urlWithTop}: ${response.statusText}`);
+            if (!response.ok) {
+                throw new Error(`Error en la petición a la API ${nextLink}: ${response.statusText}`);
+            }
+
+            const data: ApiResponse<T> = await response.json();
+            allData.push(...(data.value || []));
+            nextLink = data['@odata.nextLink'];
+
+        } catch (error) {
+            const errorText = error instanceof Error ? error.message : 'Error desconocido';
+            console.error(`Error en la petición a la API ${nextLink}. Respuesta: ${errorText}`);
+            return []; // Devuelve un array vacío en caso de error
         }
-
-        const data: ApiResponse<T> = await response.json();
-        return data.value || [];
-    } catch (error) {
-        const errorText = error instanceof Error ? error.message : 'Error desconocido';
-        console.error(`Error en la petición a la API ${urlWithTop}. Respuesta: ${errorText}`);
-        return []; // Devuelve un array vacío en caso de error
     }
+    return allData;
 }
+
 
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
 async function getPedidos(token: string, date: string): Promise<LineasVentaFiltrada[]> {
@@ -838,32 +843,20 @@ async function main() {
                 
                 const mercadonaRef = ref(database, `mercadona/${fecha}`);
                 const snapshotMercadona = await get(mercadonaRef);
-                const firebaseMercadonaData = snapshotMercadona.val() || [];
-
-                const firebaseMercadonaMap = new Map<string, any>();
-                const dataAsArray: any[] = Array.isArray(firebaseMercadonaData)
-                    ? firebaseMercadonaData
-                    : Object.values(firebaseMercadonaData);
-
-                dataAsArray.forEach((pedido: any, index: number) => {
-                    if(pedido) {
-                        const key = pedido.plataforma === 'MICRO' ? `MICRO-${pedido.numPedido}` : `${pedido.plataforma.trim()}`;
-                        firebaseMercadonaMap.set(key, { ...pedido, originalIndex: index });
-                    }
-                });
+                const firebaseMercadonaData = snapshotMercadona.val() || {};
 
                 const mercadonaUpdates: { [key: string]: any } = {};
                 let newMercadonaCount = 0;
                 let updatedMercadonaCount = 0;
                 let deletedMercadonaCount = 0;
-                let nextNewIndex = dataAsArray.filter(Boolean).length;
                 
                 const apiKeys = new Set<string>();
 
-                pedidosMercadonaApi.forEach((pedidoApi: any, apiIndex: number) => {
-                    const key = pedidoApi.plataforma === 'MICRO' ? `MICRO-${pedidoApi.numPedido}` : `${pedidoApi.plataforma.trim()}`;
+                pedidosMercadonaApi.forEach((pedidoApi: any) => {
+                    const key = pedidoApi.plataforma.trim();
                     apiKeys.add(key);
-                    const existingOrderData = firebaseMercadonaMap.get(key);
+                    const existingOrderData = firebaseMercadonaData[key];
+                    const path = `mercadona/${fecha}/${key}`;
 
                     if (!existingOrderData) {
                         // Pedido nuevo
@@ -872,20 +865,16 @@ async function main() {
                             isNew: true, // Marcar como nuevo
                             productos: (pedidoApi.productos || []).map((p: any) => ({ ...p, checkState: 'unchecked', note: '' }))
                         };
-                        mercadonaUpdates[`mercadona/${fecha}/${nextNewIndex}`] = newOrder;
+                        mercadonaUpdates[path] = newOrder;
                         newMercadonaCount++;
-                        nextNewIndex++;
                     } else {
                         // Pedido existente, fusionar y comprobar cambios
-                        const { originalIndex, ...existingOrder } = existingOrderData;
-
                         let mergedOrder: any;
 
                         if (pedidoApi.plataforma === 'MICRO') {
-                            
                             const newProductos = pedidoApi.productos.map((apiPlat:any) => {
                                 const platKey = `${apiPlat.plataforma.trim()}-${apiPlat.numPedido}`;
-                                const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma.trim()}-${p.numPedido}` === platKey) || {};
+                                const existingPlat = (existingOrderData.productos || []).find((p: any) => `${p.plataforma.trim()}-${p.numPedido}` === platKey) || {};
                                 const subProductosMap = new Map();
                                 (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.linea, sub));
 
@@ -905,15 +894,15 @@ async function main() {
                                 }
                             });
                             
-                            mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
-                            if (existingOrder.status) {
-                                mergedOrder.status = existingOrder.status;
+                            mergedOrder = { ...existingOrderData, ...pedidoApi, productos: newProductos };
+                            if (existingOrderData.status) {
+                                mergedOrder.status = existingOrderData.status;
                             }
 
                         } else {
                             // Lógica de fusión para pedidos normales de Mercadona
                             const productosMap = new Map();
-                            (existingOrder.productos || []).forEach((p: any) => productosMap.set(p.linea, p));
+                            (existingOrderData.productos || []).forEach((p: any) => productosMap.set(p.linea, p));
 
                             const newProductos = (pedidoApi.productos || []).map((apiProduct: any) => {
                                 const existingProduct = productosMap.get(apiProduct.linea);
@@ -925,22 +914,22 @@ async function main() {
                                     origen: existingProduct?.origen ?? ''
                                 };
                             });
-                            mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
-                            if (existingOrder.status) {
-                                mergedOrder.status = existingOrder.status;
+                            mergedOrder = { ...existingOrderData, ...pedidoApi, productos: newProductos };
+                            if (existingOrderData.status) {
+                                mergedOrder.status = existingOrderData.status;
                             }
                         }
 
-                        if (!isEqual(existingOrder, mergedOrder)) {
-                            mercadonaUpdates[`mercadona/${fecha}/${originalIndex}`] = mergedOrder;
+                        if (!isEqual(existingOrderData, mergedOrder)) {
+                            mercadonaUpdates[path] = mergedOrder;
                             updatedMercadonaCount++;
                         }
                     }
                 });
 
-                firebaseMercadonaMap.forEach((order, key) => {
+                Object.keys(firebaseMercadonaData).forEach(key => {
                     if (!apiKeys.has(key)) {
-                        mercadonaUpdates[`mercadona/${fecha}/${order.originalIndex}`] = null;
+                        mercadonaUpdates[`mercadona/${fecha}/${key}`] = null;
                         deletedMercadonaCount++;
                     }
                 });
@@ -1001,7 +990,3 @@ async function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
-
-    
-
-    
