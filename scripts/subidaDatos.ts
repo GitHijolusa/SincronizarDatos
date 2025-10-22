@@ -434,16 +434,12 @@ async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
 }
 
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
-async function getPedidos(token: string, customerType?: 'mercadona'): Promise<LineasVentaFiltrada[]> {
-    const today = new Date();
-    const TenDaysAgo = new Date(today);
-    TenDaysAgo.setDate(today.getDate() - 10);
-    const formattedDateForQuery = formatDate(TenDaysAgo);
+async function getPedidos(token: string, date: string): Promise<LineasVentaFiltrada[]> {
     
     const apiPath = 'ConsultaLineasVenta';
     const tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS'];
     const filtroTipoCliente = tipoCliente.map(tipo => `TipoCliente eq '${tipo}'`).join(' or ');
-    const apiEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiPath}?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (${filtroTipoCliente}) and Order_Date ge ${formattedDateForQuery}`;
+    const apiEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiPath}?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (${filtroTipoCliente}) and Order_Date ge ${date}`;
 
     try {
         const allLineasVenta = await fetchApiData<LineasVentaAPI>(apiEndpoint, token);
@@ -451,27 +447,22 @@ async function getPedidos(token: string, customerType?: 'mercadona'): Promise<Li
 
         let lineasPorCliente: LineasVentaAPI[];
 
-        if (customerType === 'mercadona') {
-             lineasPorCliente = lineasConProducto.filter(linea => {
-                const cliente = linea.NombreCliente;
-                return cliente === 'MERCADONA SA' || cliente === 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA';
-            });
-        } else {
-            lineasPorCliente = lineasConProducto.filter(linea => {
-                const cliente = linea.NombreCliente;
-                const tipoCliente = linea.TipoCliente;
-                
-                if (tipoCliente === 'REPARTO') {
-                    return clientesRepartoPermitidos.includes(cliente);
-                }
+        
+        lineasPorCliente = lineasConProducto.filter(linea => {
+            const cliente = linea.NombreCliente;
+            const tipoCliente = linea.TipoCliente;
+            
+            if (tipoCliente === 'REPARTO') {
+                return clientesRepartoPermitidos.includes(cliente);
+            }
 
-                if (tipoCliente === 'OTROS') {
-                    return otrosClientesPermitidos.includes(cliente);
-                }
-                
-                return !clientesExcluidos.includes(cliente);
-            });
-        }
+            if (tipoCliente === 'OTROS') {
+                return otrosClientesPermitidos.includes(cliente);
+            }
+            
+            return !clientesExcluidos.includes(cliente);
+        });
+        
 
         const lineasFiltradas: LineasVentaFiltrada[] = lineasPorCliente.map(linea => {
             const esPingoDoce = linea.NombreCliente === 'PINGO DOCE - DISTRIBUIÇÃO ALIMENTAR, S.A.';
@@ -509,11 +500,11 @@ async function getPedidos(token: string, customerType?: 'mercadona'): Promise<Li
 }
 
 //Función para obtener los pedidos de Mercadona
-async function getPedidosMercadona(token: string, startDate: string): Promise<LineasVentaMercadonaFiltrada[]> {
+async function getPedidosMercadona(token: string, date: string): Promise<LineasVentaMercadonaFiltrada[]> {
     const apiPath = 'ConsultaLineasVenta'
     const cliente = ['C-00133', 'C-00656']
     const filtroCliente = cliente.map(id => `Sell_to_Customer_No eq '${id}'`).join(' or ')
-    const apiEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiPath}?$filter=startswith(Document_No, 'PV') and (${filtroCliente}) and Order_Date ge ${startDate}`
+    const apiEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiPath}?$filter=startswith(Document_No, 'PV') and (${filtroCliente}) and Order_Date eq ${date}`
 
     try {
         const lineasVenta = await fetchApiData<LineasVentaMercadona>(apiEndpoint, token);
@@ -709,9 +700,9 @@ async function main() {
         console.log('Iniciando subida de datos...');
         const token = await getAccessToken();
         const today = new Date();
-        const tenDaysAgo = new Date(today);
-        tenDaysAgo.setDate(today.getDate() - 10);
-        const formattedTenDaysAgo = formatDate(tenDaysAgo);
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 7);
+        const formattedSevenDaysAgo = formatDate(sevenDaysAgo);
 
         // --- PEDIDOS GENERALES ---
         console.log('Procesando pedidos generales...');
@@ -729,7 +720,7 @@ async function main() {
             }
         });
         
-        const lineasVentaData = await getPedidos(token);
+        const lineasVentaData = await getPedidos(token, formattedSevenDaysAgo);
         const pedidosApi = agruparPedidos(lineasVentaData, horasDeCargaPorPedido);
         
         console.log('Obteniendo pedidos generales existentes de Firebase...');
@@ -822,146 +813,145 @@ async function main() {
         }
 
         // --- PEDIDOS MERCADONA ---
-        console.log('\nProcesando pedidos de Mercadona...');
-        const mercadonaLinesData = await getPedidosMercadona(token, formattedTenDaysAgo);
+        console.log('\nProcesando pedidos de Mercadona para los últimos 7 días...');
 
-        if (mercadonaLinesData.length > 0) {
-            const pedidosPorFecha = groupBy(mercadonaLinesData, (linea) => linea.FechaPedido.split('T')[0]);
+        for (let i = 0; i < 7; i++) {
+            const processDate = new Date(sevenDaysAgo);
+            processDate.setDate(processDate.getDate() + i);
+            const fecha = formatDate(processDate);
 
-            for (const fecha of Object.keys(pedidosPorFecha)) {
-                console.log(`Procesando Mercadona para fecha: ${fecha}`);
-                const pedidosDelDia = pedidosPorFecha[fecha];
-                const pedidosMercadonaApi = agruparPedidosMercadona(pedidosDelDia);
+            console.log(`Procesando Mercadona para fecha: ${fecha}`);
+            const mercadonaLinesData = await getPedidosMercadona(token, fecha);
 
-                if (pedidosMercadonaApi.length > 0) {
-                    const mercadonaRef = ref(database, `mercadona/${fecha}`);
-                    const snapshotMercadona = await get(mercadonaRef);
-                    const firebaseMercadonaData = snapshotMercadona.val() || [];
+            if (mercadonaLinesData.length > 0) {
+                const pedidosMercadonaApi = agruparPedidosMercadona(mercadonaLinesData);
+                
+                const mercadonaRef = ref(database, `mercadona/${fecha}`);
+                const snapshotMercadona = await get(mercadonaRef);
+                const firebaseMercadonaData = snapshotMercadona.val() || [];
 
-                    const firebaseMercadonaMap = new Map<string, any>();
-                    const dataAsArray: any[] = Array.isArray(firebaseMercadonaData)
-                        ? firebaseMercadonaData
-                        : Object.values(firebaseMercadonaData);
+                const firebaseMercadonaMap = new Map<string, any>();
+                const dataAsArray: any[] = Array.isArray(firebaseMercadonaData)
+                    ? firebaseMercadonaData
+                    : Object.values(firebaseMercadonaData);
 
-                    dataAsArray.forEach((pedido: any, index: number) => {
-                        if(pedido) { 
-                            const key = pedido.plataforma === 'MICRO' ? `MICRO-${pedido.numPedido}` : `${pedido.plataforma.trim()}`;
-                            firebaseMercadonaMap.set(key, { ...pedido, originalIndex: index });
-                        }
-                    });
+                dataAsArray.forEach((pedido: any, index: number) => {
+                    if(pedido) {
+                        const key = pedido.plataforma === 'MICRO' ? `MICRO-${pedido.numPedido}` : `${pedido.plataforma.trim()}`;
+                        firebaseMercadonaMap.set(key, { ...pedido, originalIndex: index });
+                    }
+                });
 
-                    const mercadonaUpdates: { [key: string]: any } = {};
-                    let newMercadonaCount = 0;
-                    let updatedMercadonaCount = 0;
-                    let deletedMercadonaCount = 0;
-                    let nextNewIndex = dataAsArray.filter(Boolean).length;
-                    
-                    const apiKeys = new Set<string>();
+                const mercadonaUpdates: { [key: string]: any } = {};
+                let newMercadonaCount = 0;
+                let updatedMercadonaCount = 0;
+                let deletedMercadonaCount = 0;
+                let nextNewIndex = dataAsArray.filter(Boolean).length;
+                
+                const apiKeys = new Set<string>();
 
-                    pedidosMercadonaApi.forEach((pedidoApi: any) => {
-                         const key = pedidoApi.plataforma === 'MICRO' ? `MICRO-${pedidoApi.numPedido}` : `${pedidoApi.plataforma.trim()}`;
-                        apiKeys.add(key);
-                        const existingOrderData = firebaseMercadonaMap.get(key);
+                pedidosMercadonaApi.forEach((pedidoApi: any) => {
+                    const key = pedidoApi.plataforma === 'MICRO' ? `MICRO-${pedidoApi.numPedido}` : `${pedidoApi.plataforma.trim()}`;
+                    apiKeys.add(key);
+                    const existingOrderData = firebaseMercadonaMap.get(key);
 
-                        if (!existingOrderData) {
-                            // Pedido nuevo
-                            const newOrder = {
-                                ...pedidoApi,
-                                isNew: true, // Marcar como nuevo
-                                productos: (pedidoApi.productos || []).map((p: any) => ({ ...p, checkState: 'unchecked', note: '' }))
-                            };
-                            mercadonaUpdates[`mercadona/${fecha}/${nextNewIndex}`] = newOrder;
-                            newMercadonaCount++;
-                            nextNewIndex++;
-                        } else {
-                            // Pedido existente, fusionar y comprobar cambios
-                            const { originalIndex, ...existingOrder } = existingOrderData;
+                    if (!existingOrderData) {
+                        // Pedido nuevo
+                        const newOrder = {
+                            ...pedidoApi,
+                            isNew: true, // Marcar como nuevo
+                            productos: (pedidoApi.productos || []).map((p: any) => ({ ...p, checkState: 'unchecked', note: '' }))
+                        };
+                        mercadonaUpdates[`mercadona/${fecha}/${nextNewIndex}`] = newOrder;
+                        newMercadonaCount++;
+                        nextNewIndex++;
+                    } else {
+                        // Pedido existente, fusionar y comprobar cambios
+                        const { originalIndex, ...existingOrder } = existingOrderData;
 
-                            let mergedOrder: any;
+                        let mergedOrder: any;
 
-                            if (pedidoApi.plataforma === 'MICRO') {
-                                
-                                const newProductos = pedidoApi.productos.map((apiPlat:any) => {
-                                    const platKey = `${apiPlat.plataforma.trim()}-${apiPlat.numPedido}`;
-                                    const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma.trim()}-${p.numPedido}` === platKey) || {};
-                                    const subProductosMap = new Map();
-                                    (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.linea, sub));
+                        if (pedidoApi.plataforma === 'MICRO') {
+                            
+                            const newProductos = pedidoApi.productos.map((apiPlat:any) => {
+                                const platKey = `${apiPlat.plataforma.trim()}-${apiPlat.numPedido}`;
+                                const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma.trim()}-${p.numPedido}` === platKey) || {};
+                                const subProductosMap = new Map();
+                                (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.linea, sub));
 
-                                    const newSubProductos = apiPlat.subProductos.map((apiSub: any) => {
-                                        const existingSub = subProductosMap.get(apiSub.linea);
-                                        return {
-                                            ...apiSub,
-                                            checkState: existingSub?.checkState ?? 'unchecked',
-                                            note: existingSub?.note ?? '',
-                                            variedad: existingSub?.variedad ?? '',
-                                            origen: existingSub?.origen ?? ''
-                                        };
-                                    });
+                                const newSubProductos = apiPlat.subProductos.map((apiSub: any) => {
+                                    const existingSub = subProductosMap.get(apiSub.linea);
                                     return {
-                                        ...apiPlat,
-                                        subProductos: newSubProductos,
-                                    }
-                                });
-                                
-                                mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
-                                if (existingOrder.status) {
-                                    mergedOrder.status = existingOrder.status;
-                                }
-
-                            } else {
-                                // Lógica de fusión para pedidos normales de Mercadona
-                                const productosMap = new Map();
-                                (existingOrder.productos || []).forEach((p: any) => productosMap.set(p.linea, p));
-
-                                const newProductos = (pedidoApi.productos || []).map((apiProduct: any) => {
-                                    const existingProduct = productosMap.get(apiProduct.linea);
-                                    return {
-                                        ...apiProduct,
-                                        checkState: existingProduct?.checkState ?? 'unchecked',
-                                        note: existingProduct?.note ?? '',
-                                        variedad: existingProduct?.variedad ?? '',
-                                        origen: existingProduct?.origen ?? ''
+                                        ...apiSub,
+                                        checkState: existingSub?.checkState ?? 'unchecked',
+                                        note: existingSub?.note ?? '',
+                                        variedad: existingSub?.variedad ?? '',
+                                        origen: existingSub?.origen ?? ''
                                     };
                                 });
-                                mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
-                                if (existingOrder.status) {
-                                    mergedOrder.status = existingOrder.status;
+                                return {
+                                    ...apiPlat,
+                                    subProductos: newSubProductos,
                                 }
+                            });
+                            
+                            mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
+                            if (existingOrder.status) {
+                                mergedOrder.status = existingOrder.status;
                             }
 
-                            if (!isEqual(existingOrder, mergedOrder)) {
-                                mercadonaUpdates[`mercadona/${fecha}/${originalIndex}`] = mergedOrder;
-                                updatedMercadonaCount++;
+                        } else {
+                            // Lógica de fusión para pedidos normales de Mercadona
+                            const productosMap = new Map();
+                            (existingOrder.productos || []).forEach((p: any) => productosMap.set(p.linea, p));
+
+                            const newProductos = (pedidoApi.productos || []).map((apiProduct: any) => {
+                                const existingProduct = productosMap.get(apiProduct.linea);
+                                return {
+                                    ...apiProduct,
+                                    checkState: existingProduct?.checkState ?? 'unchecked',
+                                    note: existingProduct?.note ?? '',
+                                    variedad: existingProduct?.variedad ?? '',
+                                    origen: existingProduct?.origen ?? ''
+                                };
+                            });
+                            mergedOrder = { ...existingOrder, ...pedidoApi, productos: newProductos };
+                            if (existingOrder.status) {
+                                mergedOrder.status = existingOrder.status;
                             }
                         }
-                    });
 
-                    firebaseMercadonaMap.forEach((order, key) => {
-                        if (!apiKeys.has(key)) {
-                            mercadonaUpdates[`mercadona/${fecha}/${order.originalIndex}`] = null;
-                            deletedMercadonaCount++;
+                        if (!isEqual(existingOrder, mergedOrder)) {
+                            mercadonaUpdates[`mercadona/${fecha}/${originalIndex}`] = mergedOrder;
+                            updatedMercadonaCount++;
                         }
-                    });
-
-                    if (Object.keys(mercadonaUpdates).length > 0) {
-                        await update(ref(database), mercadonaUpdates);
-                        console.log(`Mercadona (${fecha}): ${newMercadonaCount} nuevos añadidos, ${updatedMercadonaCount} actualizados, ${deletedMercadonaCount} eliminados.`);
-                    } else {
-                        console.log(`Mercadona (${fecha}): Sin cambios.`);
                     }
+                });
+
+                firebaseMercadonaMap.forEach((order, key) => {
+                    if (!apiKeys.has(key)) {
+                        mercadonaUpdates[`mercadona/${fecha}/${order.originalIndex}`] = null;
+                        deletedMercadonaCount++;
+                    }
+                });
+
+                if (Object.keys(mercadonaUpdates).length > 0) {
+                    await update(ref(database), mercadonaUpdates);
+                    console.log(`Mercadona (${fecha}): ${newMercadonaCount} nuevos añadidos, ${updatedMercadonaCount} actualizados, ${deletedMercadonaCount} eliminados.`);
                 } else {
-                     // Si la API no devuelve pedidos para una fecha, borra los de Firebase para esa fecha.
-                    const mercadonaRef = ref(database, `mercadona/${fecha}`);
-                    const snapshot = await get(mercadonaRef);
-                    if (snapshot.exists()) {
-                        await remove(mercadonaRef);
-                        console.log(`Mercadona (${fecha}): Eliminados todos los pedidos de Firebase porque no se encontraron en la API.`);
-                    }
+                    console.log(`Mercadona (${fecha}): Sin cambios.`);
+                }
+            } else {
+                 // Si la API no devuelve pedidos para una fecha, borra los de Firebase para esa fecha.
+                const mercadonaRef = ref(database, `mercadona/${fecha}`);
+                const snapshot = await get(mercadonaRef);
+                if (snapshot.exists()) {
+                    await remove(mercadonaRef);
+                    console.log(`Mercadona (${fecha}): Eliminados todos los pedidos de Firebase porque no se encontraron en la API.`);
                 }
             }
-        } else {
-            console.log('No se encontraron pedidos de Mercadona en el rango de fechas especificado.');
         }
+        
 
         // --- HORAS CARGA MERCADONA ---
         console.log('\nProcesando horas de carga de Mercadona para los últimos días...');

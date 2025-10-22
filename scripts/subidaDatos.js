@@ -320,20 +320,16 @@ function fetchApiData(apiUrl, token) {
     });
 }
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
-function getPedidos(token, customerType) {
+function getPedidos(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var today, TenDaysAgo, formattedDateForQuery, apiPath, tipoCliente, filtroTipoCliente, apiEndpoint, allLineasVenta, lineasConProducto, lineasPorCliente, lineasFiltradas, error_2;
+        var apiPath, tipoCliente, filtroTipoCliente, apiEndpoint, allLineasVenta, lineasConProducto, lineasPorCliente, lineasFiltradas, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    today = new Date();
-                    TenDaysAgo = new Date(today);
-                    TenDaysAgo.setDate(today.getDate() - 10);
-                    formattedDateForQuery = formatDate(TenDaysAgo);
                     apiPath = 'ConsultaLineasVenta';
                     tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS'];
                     filtroTipoCliente = tipoCliente.map(function (tipo) { return "TipoCliente eq '".concat(tipo, "'"); }).join(' or ');
-                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (").concat(filtroTipoCliente, ") and Order_Date ge ").concat(formattedDateForQuery);
+                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (").concat(filtroTipoCliente, ") and Order_Date ge ").concat(date);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -341,26 +337,17 @@ function getPedidos(token, customerType) {
                 case 2:
                     allLineasVenta = _a.sent();
                     lineasConProducto = allLineasVenta.filter(function (linea) { return linea.No && linea.No.trim() !== ''; });
-                    lineasPorCliente = void 0;
-                    if (customerType === 'mercadona') {
-                        lineasPorCliente = lineasConProducto.filter(function (linea) {
-                            var cliente = linea.NombreCliente;
-                            return cliente === 'MERCADONA SA' || cliente === 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA';
-                        });
-                    }
-                    else {
-                        lineasPorCliente = lineasConProducto.filter(function (linea) {
-                            var cliente = linea.NombreCliente;
-                            var tipoCliente = linea.TipoCliente;
-                            if (tipoCliente === 'REPARTO') {
-                                return clientes_config_1.clientesRepartoPermitidos.includes(cliente);
-                            }
-                            if (tipoCliente === 'OTROS') {
-                                return clientes_config_1.otrosClientesPermitidos.includes(cliente);
-                            }
-                            return !clientes_config_1.clientesExcluidos.includes(cliente);
-                        });
-                    }
+                    lineasPorCliente = lineasConProducto.filter(function (linea) {
+                        var cliente = linea.NombreCliente;
+                        var tipoCliente = linea.TipoCliente;
+                        if (tipoCliente === 'REPARTO') {
+                            return clientes_config_1.clientesRepartoPermitidos.includes(cliente);
+                        }
+                        if (tipoCliente === 'OTROS') {
+                            return clientes_config_1.otrosClientesPermitidos.includes(cliente);
+                        }
+                        return !clientes_config_1.clientesExcluidos.includes(cliente);
+                    });
                     lineasFiltradas = lineasPorCliente.map(function (linea) {
                         var esPingoDoce = linea.NombreCliente === 'PINGO DOCE - DISTRIBUIÇÃO ALIMENTAR, S.A.';
                         return {
@@ -398,7 +385,7 @@ function getPedidos(token, customerType) {
     });
 }
 //Función para obtener los pedidos de Mercadona
-function getPedidosMercadona(token, startDate) {
+function getPedidosMercadona(token, date) {
     return __awaiter(this, void 0, void 0, function () {
         var apiPath, cliente, filtroCliente, apiEndpoint, lineasVenta, lineasConProducto, lineasFiltradas, error_3;
         return __generator(this, function (_a) {
@@ -407,7 +394,7 @@ function getPedidosMercadona(token, startDate) {
                     apiPath = 'ConsultaLineasVenta';
                     cliente = ['C-00133', 'C-00656'];
                     filtroCliente = cliente.map(function (id) { return "Sell_to_Customer_No eq '".concat(id, "'"); }).join(' or ');
-                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=startswith(Document_No, 'PV') and (").concat(filtroCliente, ") and Order_Date ge ").concat(startDate);
+                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=startswith(Document_No, 'PV') and (").concat(filtroCliente, ") and Order_Date eq ").concat(date);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -601,26 +588,26 @@ function getProductosCliente() {
 // --- FUNCIÓN PRINCIPAL ---
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, today, tenDaysAgo, formattedTenDaysAgo, apiExp, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, mercadonaLinesData, pedidosPorFecha, _loop_1, _i, _a, fecha, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_6;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var token, today, sevenDaysAgo, formattedSevenDaysAgo, apiExp, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, apiOrderIds_1, i, processDate, fecha, mercadonaLinesData, pedidosMercadonaApi, mercadonaRef, snapshotMercadona, firebaseMercadonaData, firebaseMercadonaMap_1, dataAsArray, mercadonaUpdates_1, newMercadonaCount_1, updatedMercadonaCount_1, deletedMercadonaCount_1, nextNewIndex_1, apiKeys_1, mercadonaRef, snapshot_1, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_6;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0:
-                    _b.trys.push([0, 23, , 24]);
+                    _a.trys.push([0, 26, , 27]);
                     console.log('Iniciando subida de datos...');
                     return [4 /*yield*/, getAccessToken()];
                 case 1:
-                    token = _b.sent();
+                    token = _a.sent();
                     today = new Date();
-                    tenDaysAgo = new Date(today);
-                    tenDaysAgo.setDate(today.getDate() - 10);
-                    formattedTenDaysAgo = formatDate(tenDaysAgo);
+                    sevenDaysAgo = new Date(today);
+                    sevenDaysAgo.setDate(today.getDate() - 7);
+                    formattedSevenDaysAgo = formatDate(sevenDaysAgo);
                     // --- PEDIDOS GENERALES ---
                     console.log('Procesando pedidos generales...');
                     apiExp = 'lineasExpdici%C3%B3n';
                     lineasExpedicionUrl = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiExp);
                     return [4 /*yield*/, fetchApiData(lineasExpedicionUrl, token)];
                 case 2:
-                    expedicionesData = _b.sent();
+                    expedicionesData = _a.sent();
                     horasDeCargaPorPedido_1 = new Map();
                     expedicionesData.forEach(function (expedicion) {
                         if (!horasDeCargaPorPedido_1.has(expedicion.NumPedido)) {
@@ -630,21 +617,21 @@ function main() {
                             horasDeCargaPorPedido_1.get(expedicion.NumPedido).push(expedicion.HoraCarga);
                         }
                     });
-                    return [4 /*yield*/, getPedidos(token)];
+                    return [4 /*yield*/, getPedidos(token, formattedSevenDaysAgo)];
                 case 3:
-                    lineasVentaData = _b.sent();
+                    lineasVentaData = _a.sent();
                     pedidosApi = agruparPedidos(lineasVentaData, horasDeCargaPorPedido_1);
                     console.log('Obteniendo pedidos generales existentes de Firebase...');
                     allOrdersRef = (0, database_1.ref)(firebaseConfig_js_1.database, 'allOrders');
                     return [4 /*yield*/, (0, database_1.get)(allOrdersRef)];
                 case 4:
-                    snapshot = _b.sent();
+                    snapshot = _a.sent();
                     firebaseData_1 = snapshot.val() || {};
                     firebaseOrderMap_1 = new Map();
                     Object.keys(firebaseData_1).forEach(function (date) {
                         var dateOrders = firebaseData_1[date];
                         Object.keys(dateOrders).forEach(function (orderId) {
-                            firebaseOrderMap_1.set(orderId, __assign(__assign({}, dateOrders[orderId]), { originalDate: date }));
+                            firebaseOrderMap_1.set(orderId, __assign(__assign({}, dateOrders[orderId]), { originalDate: date, id: orderId }));
                         });
                     });
                     console.log("".concat(firebaseOrderMap_1.size, " pedidos generales encontrados en Firebase."));
@@ -652,6 +639,7 @@ function main() {
                     newOrdersCount_1 = 0;
                     updatedOrdersCount_1 = 0;
                     deletedOrdersCount_1 = 0;
+                    apiOrderIds_1 = new Set(pedidosApi.map(function (p) { return p.numPedido; }));
                     pedidosApi.forEach(function (pedido) {
                         var _a;
                         var orderDate = pedido.fechaPedido.split('T')[0];
@@ -665,7 +653,6 @@ function main() {
                             if (existingOrder.originalDate && existingOrder.originalDate !== orderDate) {
                                 var oldPath = "allOrders/".concat(existingOrder.originalDate, "/").concat(pedido.numPedido);
                                 updates_1[oldPath] = null;
-                                deletedOrdersCount_1++;
                             }
                             var existingProducts_1 = ((_a = existingOrder.productos) === null || _a === void 0 ? void 0 : _a.map(function (p) {
                                 var _a;
@@ -676,188 +663,209 @@ function main() {
                                     var existingProduct = existingProducts_1.find(function (p) { return p.Linea === apiProduct.Linea; });
                                     return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked' });
                                 }) });
+                            if (existingOrder.status) {
+                                mergedOrder.status = existingOrder.status;
+                            }
                             if (!(0, lodash_1.isEqual)(existingOrder, mergedOrder)) {
                                 updates_1[path] = mergedOrder;
                                 updatedOrdersCount_1++;
                             }
                         }
                     });
+                    firebaseOrderMap_1.forEach(function (order) {
+                        if (!apiOrderIds_1.has(order.id)) {
+                            var path = "allOrders/".concat(order.originalDate, "/").concat(order.id);
+                            updates_1[path] = null;
+                            deletedOrdersCount_1++;
+                        }
+                    });
                     if (!(Object.keys(updates_1).length > 0)) return [3 /*break*/, 6];
                     return [4 /*yield*/, (0, database_1.update)((0, database_1.ref)(firebaseConfig_js_1.database), updates_1)];
                 case 5:
-                    _b.sent();
-                    console.log("".concat(newOrdersCount_1, " nuevos pedidos generales a\u00F1adidos. ").concat(updatedOrdersCount_1, " pedidos existentes actualizados. ").concat(deletedOrdersCount_1, " pedidos antiguos eliminados por cambio de fecha."));
+                    _a.sent();
+                    console.log("".concat(newOrdersCount_1, " nuevos pedidos generales a\u00F1adidos. ").concat(updatedOrdersCount_1, " pedidos existentes actualizados. ").concat(deletedOrdersCount_1, " pedidos eliminados."));
                     return [3 /*break*/, 7];
                 case 6:
-                    console.log('No se encontraron nuevos pedidos generales para añadir o actualizar.');
-                    _b.label = 7;
+                    console.log('No se encontraron nuevos pedidos generales para añadir, actualizar o eliminar.');
+                    _a.label = 7;
                 case 7:
                     // --- PEDIDOS MERCADONA ---
-                    console.log('\nProcesando pedidos de Mercadona...');
-                    return [4 /*yield*/, getPedidosMercadona(token, formattedTenDaysAgo)];
+                    console.log('\nProcesando pedidos de Mercadona para los últimos 7 días...');
+                    i = 0;
+                    _a.label = 8;
                 case 8:
-                    mercadonaLinesData = _b.sent();
-                    if (!(mercadonaLinesData.length > 0)) return [3 /*break*/, 13];
-                    pedidosPorFecha = (0, lodash_1.groupBy)(mercadonaLinesData, function (linea) { return linea.FechaPedido.split('T')[0]; });
-                    _loop_1 = function (fecha) {
-                        var pedidosDelDia, pedidosMercadonaApi, mercadonaRef, snapshotMercadona, firebaseMercadonaData, firebaseMercadonaMap_1, dataAsArray, mercadonaUpdates_1, newMercadonaCount_1, updatedMercadonaCount_1, nextNewIndex_1;
-                        return __generator(this, function (_c) {
-                            switch (_c.label) {
-                                case 0:
-                                    console.log("Procesando Mercadona para fecha: ".concat(fecha));
-                                    pedidosDelDia = pedidosPorFecha[fecha];
-                                    pedidosMercadonaApi = agruparPedidosMercadona(pedidosDelDia);
-                                    if (!(pedidosMercadonaApi.length > 0)) return [3 /*break*/, 4];
-                                    mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
-                                    return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
-                                case 1:
-                                    snapshotMercadona = _c.sent();
-                                    firebaseMercadonaData = snapshotMercadona.val() || [];
-                                    firebaseMercadonaMap_1 = new Map();
-                                    dataAsArray = Array.isArray(firebaseMercadonaData)
-                                        ? firebaseMercadonaData
-                                        : Object.values(firebaseMercadonaData);
-                                    dataAsArray.forEach(function (pedido, index) {
-                                        if (pedido) {
-                                            var key = pedido.plataforma === 'MICRO' ? "MICRO-".concat(pedido.numPedido) : pedido.plataforma.trim();
-                                            firebaseMercadonaMap_1.set(key, __assign(__assign({}, pedido), { originalIndex: index }));
-                                        }
-                                    });
-                                    mercadonaUpdates_1 = {};
-                                    newMercadonaCount_1 = 0;
-                                    updatedMercadonaCount_1 = 0;
-                                    nextNewIndex_1 = dataAsArray.filter(Boolean).length;
-                                    pedidosMercadonaApi.forEach(function (pedidoApi, apiIndex) {
-                                        var key = pedidoApi.plataforma === 'MICRO' ? "MICRO-".concat(pedidoApi.numPedido) : pedidoApi.plataforma.trim();
-                                        var existingOrderData = firebaseMercadonaMap_1.get(key);
-                                        if (!existingOrderData) {
-                                            // Pedido nuevo
-                                            var newOrder = __assign(__assign({}, pedidoApi), { isNew: true, productos: (pedidoApi.productos || []).map(function (p) { return (__assign(__assign({}, p), { checkState: 'unchecked', note: '' })); }) });
-                                            mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(nextNewIndex_1)] = newOrder;
-                                            newMercadonaCount_1++;
-                                            nextNewIndex_1++;
-                                        }
-                                        else {
-                                            // Pedido existente, fusionar y comprobar cambios
-                                            var originalIndex = existingOrderData.originalIndex, existingOrder_1 = __rest(existingOrderData, ["originalIndex"]);
-                                            var mergedOrder = void 0;
-                                            if (pedidoApi.plataforma === 'MICRO') {
-                                                var newProductos = pedidoApi.productos.map(function (apiPlat) {
-                                                    var platKey = "".concat(apiPlat.plataforma, "-").concat(apiPlat.numPedido);
-                                                    var existingPlat = (existingOrder_1.productos || []).find(function (p) { return "".concat(p.plataforma, "-").concat(p.numPedido) === platKey; }) || {};
-                                                    var subProductosMap = new Map();
-                                                    (existingPlat.subProductos || []).forEach(function (sub) { return subProductosMap.set(sub.linea, sub); });
-                                                    var newSubProductos = apiPlat.subProductos.map(function (apiSub) {
-                                                        var _a, _b, _c, _d;
-                                                        var existingSub = subProductosMap.get(apiSub.linea);
-                                                        return __assign(__assign({}, apiSub), { checkState: (_a = existingSub === null || existingSub === void 0 ? void 0 : existingSub.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingSub === null || existingSub === void 0 ? void 0 : existingSub.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingSub === null || existingSub === void 0 ? void 0 : existingSub.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingSub === null || existingSub === void 0 ? void 0 : existingSub.origen) !== null && _d !== void 0 ? _d : '' });
-                                                    });
-                                                    return __assign(__assign({}, apiPlat), { subProductos: newSubProductos });
-                                                });
-                                                mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
-                                                if (existingOrder_1.status) {
-                                                    mergedOrder.status = existingOrder_1.status;
-                                                }
-                                            }
-                                            else {
-                                                // Lógica de fusión para pedidos normales de Mercadona
-                                                var productosMap_1 = new Map();
-                                                (existingOrder_1.productos || []).forEach(function (p) { return productosMap_1.set(p.linea, p); });
-                                                var newProductos = (pedidoApi.productos || []).map(function (apiProduct) {
-                                                    var _a, _b, _c, _d;
-                                                    var existingProduct = productosMap_1.get(apiProduct.linea);
-                                                    return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.origen) !== null && _d !== void 0 ? _d : '' });
-                                                });
-                                                mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
-                                                if (existingOrder_1.status) {
-                                                    mergedOrder.status = existingOrder_1.status;
-                                                }
-                                            }
-                                            if (!(0, lodash_1.isEqual)(existingOrder_1, mergedOrder)) {
-                                                mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(originalIndex)] = mergedOrder;
-                                                updatedMercadonaCount_1++;
-                                            }
-                                        }
-                                    });
-                                    if (!(Object.keys(mercadonaUpdates_1).length > 0)) return [3 /*break*/, 3];
-                                    return [4 /*yield*/, (0, database_1.update)((0, database_1.ref)(firebaseConfig_js_1.database), mercadonaUpdates_1)];
-                                case 2:
-                                    _c.sent();
-                                    console.log("Mercadona (".concat(fecha, "): ").concat(newMercadonaCount_1, " nuevos a\u00F1adidos, ").concat(updatedMercadonaCount_1, " actualizados."));
-                                    return [3 /*break*/, 4];
-                                case 3:
-                                    console.log("Mercadona (".concat(fecha, "): Sin cambios."));
-                                    _c.label = 4;
-                                case 4: return [2 /*return*/];
-                            }
-                        });
-                    };
-                    _i = 0, _a = Object.keys(pedidosPorFecha);
-                    _b.label = 9;
+                    if (!(i < 7)) return [3 /*break*/, 21];
+                    processDate = new Date(sevenDaysAgo);
+                    processDate.setDate(processDate.getDate() + i);
+                    fecha = formatDate(processDate);
+                    console.log("Procesando Mercadona para fecha: ".concat(fecha));
+                    return [4 /*yield*/, getPedidosMercadona(token, fecha)];
                 case 9:
-                    if (!(_i < _a.length)) return [3 /*break*/, 12];
-                    fecha = _a[_i];
-                    return [5 /*yield**/, _loop_1(fecha)];
+                    mercadonaLinesData = _a.sent();
+                    if (!(mercadonaLinesData.length > 0)) return [3 /*break*/, 18];
+                    pedidosMercadonaApi = agruparPedidosMercadona(mercadonaLinesData);
+                    mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
+                    return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
                 case 10:
-                    _b.sent();
-                    _b.label = 11;
+                    snapshotMercadona = _a.sent();
+                    firebaseMercadonaData = snapshotMercadona.val() || [];
+                    firebaseMercadonaMap_1 = new Map();
+                    dataAsArray = Array.isArray(firebaseMercadonaData)
+                        ? firebaseMercadonaData
+                        : Object.values(firebaseMercadonaData);
+                    dataAsArray.forEach(function (pedido, index) {
+                        if (pedido) {
+                            var key = pedido.plataforma === 'MICRO' ? "MICRO-".concat(pedido.numPedido) : "".concat(pedido.plataforma.trim());
+                            firebaseMercadonaMap_1.set(key, __assign(__assign({}, pedido), { originalIndex: index }));
+                        }
+                    });
+                    mercadonaUpdates_1 = {};
+                    newMercadonaCount_1 = 0;
+                    updatedMercadonaCount_1 = 0;
+                    deletedMercadonaCount_1 = 0;
+                    nextNewIndex_1 = dataAsArray.filter(Boolean).length;
+                    apiKeys_1 = new Set();
+                    pedidosMercadonaApi.forEach(function (pedidoApi) {
+                        var key = pedidoApi.plataforma === 'MICRO' ? "MICRO-".concat(pedidoApi.numPedido) : "".concat(pedidoApi.plataforma.trim());
+                        apiKeys_1.add(key);
+                        var existingOrderData = firebaseMercadonaMap_1.get(key);
+                        if (!existingOrderData) {
+                            // Pedido nuevo
+                            var newOrder = __assign(__assign({}, pedidoApi), { isNew: true, productos: (pedidoApi.productos || []).map(function (p) { return (__assign(__assign({}, p), { checkState: 'unchecked', note: '' })); }) });
+                            mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(nextNewIndex_1)] = newOrder;
+                            newMercadonaCount_1++;
+                            nextNewIndex_1++;
+                        }
+                        else {
+                            // Pedido existente, fusionar y comprobar cambios
+                            var originalIndex = existingOrderData.originalIndex, existingOrder_1 = __rest(existingOrderData, ["originalIndex"]);
+                            var mergedOrder = void 0;
+                            if (pedidoApi.plataforma === 'MICRO') {
+                                var newProductos = pedidoApi.productos.map(function (apiPlat) {
+                                    var platKey = "".concat(apiPlat.plataforma.trim(), "-").concat(apiPlat.numPedido);
+                                    var existingPlat = (existingOrder_1.productos || []).find(function (p) { return "".concat(p.plataforma.trim(), "-").concat(p.numPedido) === platKey; }) || {};
+                                    var subProductosMap = new Map();
+                                    (existingPlat.subProductos || []).forEach(function (sub) { return subProductosMap.set(sub.linea, sub); });
+                                    var newSubProductos = apiPlat.subProductos.map(function (apiSub) {
+                                        var _a, _b, _c, _d;
+                                        var existingSub = subProductosMap.get(apiSub.linea);
+                                        return __assign(__assign({}, apiSub), { checkState: (_a = existingSub === null || existingSub === void 0 ? void 0 : existingSub.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingSub === null || existingSub === void 0 ? void 0 : existingSub.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingSub === null || existingSub === void 0 ? void 0 : existingSub.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingSub === null || existingSub === void 0 ? void 0 : existingSub.origen) !== null && _d !== void 0 ? _d : '' });
+                                    });
+                                    return __assign(__assign({}, apiPlat), { subProductos: newSubProductos });
+                                });
+                                mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
+                                if (existingOrder_1.status) {
+                                    mergedOrder.status = existingOrder_1.status;
+                                }
+                            }
+                            else {
+                                // Lógica de fusión para pedidos normales de Mercadona
+                                var productosMap_1 = new Map();
+                                (existingOrder_1.productos || []).forEach(function (p) { return productosMap_1.set(p.linea, p); });
+                                var newProductos = (pedidoApi.productos || []).map(function (apiProduct) {
+                                    var _a, _b, _c, _d;
+                                    var existingProduct = productosMap_1.get(apiProduct.linea);
+                                    return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.origen) !== null && _d !== void 0 ? _d : '' });
+                                });
+                                mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
+                                if (existingOrder_1.status) {
+                                    mergedOrder.status = existingOrder_1.status;
+                                }
+                            }
+                            if (!(0, lodash_1.isEqual)(existingOrder_1, mergedOrder)) {
+                                mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(originalIndex)] = mergedOrder;
+                                updatedMercadonaCount_1++;
+                            }
+                        }
+                    });
+                    firebaseMercadonaMap_1.forEach(function (order, key) {
+                        if (!apiKeys_1.has(key)) {
+                            mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(order.originalIndex)] = null;
+                            deletedMercadonaCount_1++;
+                        }
+                    });
+                    if (!(Object.keys(mercadonaUpdates_1).length > 0)) return [3 /*break*/, 12];
+                    return [4 /*yield*/, (0, database_1.update)((0, database_1.ref)(firebaseConfig_js_1.database), mercadonaUpdates_1)];
                 case 11:
-                    _i++;
-                    return [3 /*break*/, 9];
-                case 12: return [3 /*break*/, 14];
-                case 13:
-                    console.log('No se encontraron pedidos de Mercadona en el rango de fechas especificado.');
-                    _b.label = 14;
+                    _a.sent();
+                    console.log("Mercadona (".concat(fecha, "): ").concat(newMercadonaCount_1, " nuevos a\u00F1adidos, ").concat(updatedMercadonaCount_1, " actualizados, ").concat(deletedMercadonaCount_1, " eliminados."));
+                    return [3 /*break*/, 13];
+                case 12:
+                    console.log("Mercadona (".concat(fecha, "): Sin cambios."));
+                    _a.label = 13;
+                case 13: return [3 /*break*/, 17];
                 case 14:
+                    mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
+                    return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
+                case 15:
+                    snapshot_1 = _a.sent();
+                    if (!snapshot_1.exists()) return [3 /*break*/, 17];
+                    return [4 /*yield*/, (0, database_1.remove)(mercadonaRef)];
+                case 16:
+                    _a.sent();
+                    console.log("Mercadona (".concat(fecha, "): Eliminados todos los pedidos de Firebase porque no se encontraron en la API."));
+                    _a.label = 17;
+                case 17: return [3 /*break*/, 20];
+                case 18:
+                    console.log("Mercadona (".concat(fecha, "): No se encontraron pedidos, limpiando si existen en Firebase..."));
+                    return [4 /*yield*/, (0, database_1.set)((0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha)), null)];
+                case 19:
+                    _a.sent();
+                    console.log("Mercadona (".concat(fecha, "): Limpieza completada."));
+                    _a.label = 20;
+                case 20:
+                    i++;
+                    return [3 /*break*/, 8];
+                case 21:
                     // --- HORAS CARGA MERCADONA ---
                     console.log('\nProcesando horas de carga de Mercadona para los últimos días...');
                     i = -2;
-                    _b.label = 15;
-                case 15:
-                    if (!(i < 3)) return [3 /*break*/, 20];
+                    _a.label = 22;
+                case 22:
+                    if (!(i < 3)) return [3 /*break*/, 27];
                     targetDate = new Date();
                     targetDate.setDate(today.getDate() - i);
                     formattedDate = formatDate(targetDate);
                     console.log("Obteniendo horas de carga para ".concat(formattedDate, "..."));
                     return [4 /*yield*/, getHorasCarga(token, targetDate)];
-                case 16:
-                    horasCargaData = _b.sent();
-                    if (!(horasCargaData && horasCargaData.length > 0)) return [3 /*break*/, 18];
+                case 23:
+                    horasCargaData = _a.sent();
+                    if (!(horasCargaData && horasCargaData.length > 0)) return [3 /*break*/, 25];
                     horasCargaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "horasCargaMercadona/".concat(formattedDate));
                     return [4 /*yield*/, (0, database_1.set)(horasCargaRef, horasCargaData)];
-                case 17:
-                    _b.sent();
+                case 24:
+                    _a.sent();
                     console.log("Horas de carga de Mercadona para ".concat(formattedDate, " guardadas en Firebase."));
-                    return [3 /*break*/, 19];
-                case 18:
-                    console.log("No se encontraron horas de carga de Mercadona para ".concat(formattedDate, ", no se guardar\u00E1 nada."));
-                    _b.label = 19;
-                case 19:
+                    return [3 /*break*/, 26];
+                case 25:
+                    console.log("No se encontraron horas de carga de Mercadona para ".concat(formattedDate, ", no se guardará nada."));
+                    _a.label = 26;
+                case 26:
                     i++;
-                    return [3 /*break*/, 15];
-                case 20:
+                    return [3 /*break*/, 22];
+                case 27:
                     // --- PRODUCTOS CLIENTE ---
                     console.log('\nProcesando productos de cliente...');
                     return [4 /*yield*/, getProductosCliente()];
-                case 21:
-                    productosCliente = _b.sent();
+                case 28:
+                    productosCliente = _a.sent();
                     productosClienteRef = (0, database_1.ref)(firebaseConfig_js_1.database, 'productosCliente');
                     return [4 /*yield*/, (0, database_1.set)(productosClienteRef, productosCliente)];
-                case 22:
-                    _b.sent();
+                case 29:
+                    _a.sent();
                     console.log('Productos de cliente guardados en Firebase.');
                     console.log('\nSubida de datos completada con éxito.');
-                    return [3 /*break*/, 24];
-                case 23:
-                    error_6 = _b.sent();
+                    return [3 /*break*/, 31];
+                case 30:
+                    error_6 = _a.sent();
                     if (error_6 instanceof Error) {
                         console.error('Error en el proceso principal:', error_6.message);
                     }
                     else {
                         console.error('Ocurrió un error desconocido en el proceso principal.');
                     }
-                    return [3 /*break*/, 24];
-                case 24: return [2 /*return*/];
+                    return [3 /*break*/, 31];
+                case 31: return [2 /*return*/];
             }
         });
     });
