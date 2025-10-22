@@ -719,7 +719,7 @@ function main() {
                                         : Object.values(firebaseMercadonaData);
                                     dataAsArray.forEach(function (pedido, index) {
                                         if (pedido) {
-                                            var key = pedido.plataforma === 'MICRO' ? "MICRO-".concat(pedido.numPedido, "-").concat(index) : pedido.plataforma.trim();
+                                            var key = pedido.plataforma === 'MICRO' ? "MICRO-".concat(pedido.numPedido) : pedido.plataforma.trim();
                                             firebaseMercadonaMap_1.set(key, __assign(__assign({}, pedido), { originalIndex: index }));
                                         }
                                     });
@@ -728,7 +728,7 @@ function main() {
                                     updatedMercadonaCount_1 = 0;
                                     nextNewIndex_1 = dataAsArray.filter(Boolean).length;
                                     pedidosMercadonaApi.forEach(function (pedidoApi, apiIndex) {
-                                        var key = pedidoApi.plataforma === 'MICRO' ? "MICRO-".concat(pedidoApi.numPedido, "-").concat(apiIndex) : pedidoApi.plataforma.trim();
+                                        var key = pedidoApi.plataforma === 'MICRO' ? "MICRO-".concat(pedidoApi.numPedido) : pedidoApi.plataforma.trim();
                                         var existingOrderData = firebaseMercadonaMap_1.get(key);
                                         if (!existingOrderData) {
                                             // Pedido nuevo
@@ -746,10 +746,10 @@ function main() {
                                                     var platKey = "".concat(apiPlat.plataforma, "-").concat(apiPlat.numPedido);
                                                     var existingPlat = (existingOrder_1.productos || []).find(function (p) { return "".concat(p.plataforma, "-").concat(p.numPedido) === platKey; }) || {};
                                                     var subProductosMap = new Map();
-                                                    (existingPlat.subProductos || []).forEach(function (sub) { return subProductosMap.set(sub.producto, sub); });
+                                                    (existingPlat.subProductos || []).forEach(function (sub) { return subProductosMap.set(sub.linea, sub); });
                                                     var newSubProductos = apiPlat.subProductos.map(function (apiSub) {
                                                         var _a, _b, _c, _d;
-                                                        var existingSub = subProductosMap.get(apiSub.producto);
+                                                        var existingSub = subProductosMap.get(apiSub.linea);
                                                         return __assign(__assign({}, apiSub), { checkState: (_a = existingSub === null || existingSub === void 0 ? void 0 : existingSub.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingSub === null || existingSub === void 0 ? void 0 : existingSub.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingSub === null || existingSub === void 0 ? void 0 : existingSub.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingSub === null || existingSub === void 0 ? void 0 : existingSub.origen) !== null && _d !== void 0 ? _d : '' });
                                                     });
                                                     return __assign(__assign({}, apiPlat), { subProductos: newSubProductos });

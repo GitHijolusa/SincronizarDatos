@@ -1,6 +1,6 @@
-import { ExpedicionAgrupada, ExpedicionPorPlataforma } from '../src/lib/types';
+import { ExpedicionAgrupada, ExpedicionPorPlataforma, Order, Product } from '../src/lib/types';
 import { database } from '../firebaseConfig.js';
-import { ref, update, get, set } from 'firebase/database';
+import { ref, update, get, set, remove } from 'firebase/database';
 import { groupBy, isEqual } from 'lodash';
 import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../config/clientes_config';
 
@@ -204,7 +204,7 @@ async function getAccessToken(): Promise<string> {
     });
 
     try {
-        const response = await fetch(tokenEndpoint, {
+        const response: Response = await fetch(tokenEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body,
@@ -741,7 +741,7 @@ async function main() {
         Object.keys(firebaseData).forEach(date => {
             const dateOrders = firebaseData[date];
             Object.keys(dateOrders).forEach(orderId => {
-                firebaseOrderMap.set(orderId, { ...dateOrders[orderId], originalDate: date });
+                firebaseOrderMap.set(orderId, { ...dateOrders[orderId], originalDate: date, id: orderId });
             });
         });
 
@@ -752,6 +752,7 @@ async function main() {
         let updatedOrdersCount = 0;
         let deletedOrdersCount = 0;
 
+        const apiOrderIds = new Set(pedidosApi.map(p => p.numPedido));
 
         pedidosApi.forEach(pedido => {
             const orderDate = pedido.fechaPedido.split('T')[0];
@@ -774,7 +775,6 @@ async function main() {
                 if (existingOrder.originalDate && existingOrder.originalDate !== orderDate) {
                     const oldPath = `allOrders/${existingOrder.originalDate}/${pedido.numPedido}`;
                     updates[oldPath] = null; 
-                    deletedOrdersCount++;
                 }
 
                 const existingProducts = existingOrder.productos?.map((p: any) => {
@@ -795,6 +795,9 @@ async function main() {
                         };
                     })
                 };
+                if (existingOrder.status) {
+                    mergedOrder.status = existingOrder.status;
+                }
 
                 if (!isEqual(existingOrder, mergedOrder)) {
                     updates[path] = mergedOrder;
@@ -802,12 +805,20 @@ async function main() {
                 }
             }
         });
+        
+        firebaseOrderMap.forEach(order => {
+            if (!apiOrderIds.has(order.id)) {
+                const path = `allOrders/${order.originalDate}/${order.id}`;
+                updates[path] = null;
+                deletedOrdersCount++;
+            }
+        });
 
         if (Object.keys(updates).length > 0) {
             await update(ref(database), updates);
-            console.log(`${newOrdersCount} nuevos pedidos generales añadidos. ${updatedOrdersCount} pedidos existentes actualizados. ${deletedOrdersCount} pedidos antiguos eliminados por cambio de fecha.`);
+            console.log(`${newOrdersCount} nuevos pedidos generales añadidos. ${updatedOrdersCount} pedidos existentes actualizados. ${deletedOrdersCount} pedidos eliminados.`);
         } else {
-            console.log('No se encontraron nuevos pedidos generales para añadir o actualizar.');
+            console.log('No se encontraron nuevos pedidos generales para añadir, actualizar o eliminar.');
         }
 
         // --- PEDIDOS MERCADONA ---
@@ -828,13 +839,13 @@ async function main() {
                     const firebaseMercadonaData = snapshotMercadona.val() || [];
 
                     const firebaseMercadonaMap = new Map<string, any>();
-                    const dataAsArray = Array.isArray(firebaseMercadonaData)
+                    const dataAsArray: any[] = Array.isArray(firebaseMercadonaData)
                         ? firebaseMercadonaData
                         : Object.values(firebaseMercadonaData);
 
                     dataAsArray.forEach((pedido: any, index: number) => {
                         if(pedido) { 
-                            const key = pedido.plataforma === 'MICRO' ? `MICRO-${pedido.numPedido}` : pedido.plataforma.trim();
+                            const key = pedido.plataforma === 'MICRO' ? `MICRO-${pedido.numPedido}` : `${pedido.plataforma.trim()}`;
                             firebaseMercadonaMap.set(key, { ...pedido, originalIndex: index });
                         }
                     });
@@ -842,10 +853,14 @@ async function main() {
                     const mercadonaUpdates: { [key: string]: any } = {};
                     let newMercadonaCount = 0;
                     let updatedMercadonaCount = 0;
+                    let deletedMercadonaCount = 0;
                     let nextNewIndex = dataAsArray.filter(Boolean).length;
+                    
+                    const apiKeys = new Set<string>();
 
-                    pedidosMercadonaApi.forEach((pedidoApi: any, apiIndex: number) => {
-                        const key = pedidoApi.plataforma === 'MICRO' ? `MICRO-${pedidoApi.numPedido}` : pedidoApi.plataforma.trim();
+                    pedidosMercadonaApi.forEach((pedidoApi: any) => {
+                         const key = pedidoApi.plataforma === 'MICRO' ? `MICRO-${pedidoApi.numPedido}` : `${pedidoApi.plataforma.trim()}`;
+                        apiKeys.add(key);
                         const existingOrderData = firebaseMercadonaMap.get(key);
 
                         if (!existingOrderData) {
@@ -867,8 +882,8 @@ async function main() {
                             if (pedidoApi.plataforma === 'MICRO') {
                                 
                                 const newProductos = pedidoApi.productos.map((apiPlat:any) => {
-                                    const platKey = `${apiPlat.plataforma}-${apiPlat.numPedido}`;
-                                    const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma}-${p.numPedido}` === platKey) || {};
+                                    const platKey = `${apiPlat.plataforma.trim()}-${apiPlat.numPedido}`;
+                                    const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma.trim()}-${p.numPedido}` === platKey) || {};
                                     const subProductosMap = new Map();
                                     (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.linea, sub));
 
@@ -921,11 +936,26 @@ async function main() {
                         }
                     });
 
+                    firebaseMercadonaMap.forEach((order, key) => {
+                        if (!apiKeys.has(key)) {
+                            mercadonaUpdates[`mercadona/${fecha}/${order.originalIndex}`] = null;
+                            deletedMercadonaCount++;
+                        }
+                    });
+
                     if (Object.keys(mercadonaUpdates).length > 0) {
                         await update(ref(database), mercadonaUpdates);
-                        console.log(`Mercadona (${fecha}): ${newMercadonaCount} nuevos añadidos, ${updatedMercadonaCount} actualizados.`);
+                        console.log(`Mercadona (${fecha}): ${newMercadonaCount} nuevos añadidos, ${updatedMercadonaCount} actualizados, ${deletedMercadonaCount} eliminados.`);
                     } else {
                         console.log(`Mercadona (${fecha}): Sin cambios.`);
+                    }
+                } else {
+                     // Si la API no devuelve pedidos para una fecha, borra los de Firebase para esa fecha.
+                    const mercadonaRef = ref(database, `mercadona/${fecha}`);
+                    const snapshot = await get(mercadonaRef);
+                    if (snapshot.exists()) {
+                        await remove(mercadonaRef);
+                        console.log(`Mercadona (${fecha}): Eliminados todos los pedidos de Firebase porque no se encontraron en la API.`);
                     }
                 }
             }
