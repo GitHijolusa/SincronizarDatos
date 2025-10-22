@@ -20,8 +20,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -589,7 +589,7 @@ function getProductosCliente() {
 // --- FUNCIÓN PRINCIPAL ---
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, today, sevenDaysAgo, formattedSevenDaysAgo, apiExp, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, apiOrderIds_1, _loop_1, i, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_6;
+        var token, today, sevenDaysAgo_1, formattedSevenDaysAgo, apiExp, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, apiOrderIds_1, _loop_1, i, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_6;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -599,9 +599,9 @@ function main() {
                 case 1:
                     token = _a.sent();
                     today = new Date();
-                    sevenDaysAgo = new Date(today);
-                    sevenDaysAgo.setDate(today.getDate() - 7);
-                    formattedSevenDaysAgo = formatDate(sevenDaysAgo);
+                    sevenDaysAgo_1 = new Date(today);
+                    sevenDaysAgo_1.setDate(today.getDate() - 7);
+                    formattedSevenDaysAgo = formatDate(sevenDaysAgo_1);
                     // --- PEDIDOS GENERALES ---
                     console.log('Procesando pedidos generales...');
                     apiExp = 'lineasExpdici%C3%B3n';
@@ -675,7 +675,7 @@ function main() {
                     });
                     firebaseOrderMap_1.forEach(function (order) {
                         var orderDate = new Date(order.originalDate);
-                        var isAfterStartDate = orderDate >= sevenDaysAgo;
+                        var isAfterStartDate = orderDate >= sevenDaysAgo_1;
                         if (!apiOrderIds_1.has(order.id) && isAfterStartDate) {
                             var path = "allOrders/".concat(order.originalDate, "/").concat(order.id);
                             updates_1[path] = null;
@@ -729,7 +729,7 @@ function main() {
                                     deletedMercadonaCount_1 = 0;
                                     nextNewIndex_1 = dataAsArray.filter(Boolean).length;
                                     apiKeys_1 = new Set();
-                                    pedidosMercadonaApi.forEach(function (pedidoApi) {
+                                    pedidosMercadonaApi.forEach(function (pedidoApi, apiIndex) {
                                         var key = pedidoApi.plataforma === 'MICRO' ? "MICRO-".concat(pedidoApi.numPedido) : "".concat(pedidoApi.plataforma.trim());
                                         apiKeys_1.add(key);
                                         var existingOrderData = firebaseMercadonaMap_1.get(key);
@@ -846,7 +846,7 @@ function main() {
                     console.log("Horas de carga de Mercadona para ".concat(formattedDate, " guardadas en Firebase."));
                     return [3 /*break*/, 16];
                 case 15:
-                    console.log("No se encontraron horas de carga de Mercadona para ".concat(formattedDate, ", no se guardar\u00E1 nada."));
+                    console.log("No se encontraron horas de carga de Mercadona para ".concat(formattedDate, ", no se guardará nada."));
                     _a.label = 16;
                 case 16:
                     i++;
@@ -881,4 +881,4 @@ function main() {
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
 
-    
+  

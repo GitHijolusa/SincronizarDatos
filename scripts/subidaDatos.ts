@@ -858,7 +858,7 @@ async function main() {
                 
                 const apiKeys = new Set<string>();
 
-                pedidosMercadonaApi.forEach((pedidoApi: any) => {
+                pedidosMercadonaApi.forEach((pedidoApi: any, apiIndex: number) => {
                     const key = pedidoApi.plataforma === 'MICRO' ? `MICRO-${pedidoApi.numPedido}` : `${pedidoApi.plataforma.trim()}`;
                     apiKeys.add(key);
                     const existingOrderData = firebaseMercadonaMap.get(key);
@@ -1001,3 +1001,4 @@ async function main() {
 main();
 
     
+  
