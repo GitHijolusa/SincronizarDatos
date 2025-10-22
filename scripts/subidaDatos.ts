@@ -834,7 +834,7 @@ async function main() {
 
                     dataAsArray.forEach((pedido: any, index: number) => {
                         if(pedido) { 
-                            const key = pedido.plataforma === 'MICRO' ? `MICRO-${pedido.numPedido}-${index}` : pedido.plataforma.trim();
+                            const key = pedido.plataforma === 'MICRO' ? `MICRO-${pedido.numPedido}` : pedido.plataforma.trim();
                             firebaseMercadonaMap.set(key, { ...pedido, originalIndex: index });
                         }
                     });
@@ -845,7 +845,7 @@ async function main() {
                     let nextNewIndex = dataAsArray.filter(Boolean).length;
 
                     pedidosMercadonaApi.forEach((pedidoApi: any, apiIndex: number) => {
-                         const key = pedidoApi.plataforma === 'MICRO' ? `MICRO-${pedidoApi.numPedido}-${apiIndex}` : pedidoApi.plataforma.trim();
+                        const key = pedidoApi.plataforma === 'MICRO' ? `MICRO-${pedidoApi.numPedido}` : pedidoApi.plataforma.trim();
                         const existingOrderData = firebaseMercadonaMap.get(key);
 
                         if (!existingOrderData) {
@@ -870,10 +870,10 @@ async function main() {
                                     const platKey = `${apiPlat.plataforma}-${apiPlat.numPedido}`;
                                     const existingPlat = (existingOrder.productos || []).find((p: any) => `${p.plataforma}-${p.numPedido}` === platKey) || {};
                                     const subProductosMap = new Map();
-                                    (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.producto, sub));
+                                    (existingPlat.subProductos || []).forEach((sub: any) => subProductosMap.set(sub.linea, sub));
 
                                     const newSubProductos = apiPlat.subProductos.map((apiSub: any) => {
-                                        const existingSub = subProductosMap.get(apiSub.producto);
+                                        const existingSub = subProductosMap.get(apiSub.linea);
                                         return {
                                             ...apiSub,
                                             checkState: existingSub?.checkState ?? 'unchecked',

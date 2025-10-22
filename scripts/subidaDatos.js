@@ -288,24 +288,33 @@ function agruparPedidosMercadona(lineasVenta) {
 // --- FUNCIONES PRINCIPALES DE OBTENCIÓN DE DATOS ---
 function fetchApiData(apiUrl, token) {
     return __awaiter(this, void 0, void 0, function () {
-        var response, errorText, data;
+        var results, nextLink, response, errorText, data;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, fetch(apiUrl, {
-                        method: 'GET',
-                        headers: { 'Authorization': "Bearer ".concat(token), 'Content-Type': 'application/json' },
-                    })];
+                case 0:
+                    results = [];
+                    nextLink = apiUrl;
+                    _a.label = 1;
                 case 1:
-                    response = _a.sent();
-                    if (!!response.ok) return [3 /*break*/, 3];
-                    return [4 /*yield*/, response.text()];
+                    if (!nextLink) return [3 /*break*/, 6];
+                    return [4 /*yield*/, fetch(nextLink, {
+                            method: 'GET',
+                            headers: { 'Authorization': "Bearer ".concat(token), 'Content-Type': 'application/json' },
+                        })];
                 case 2:
+                    response = _a.sent();
+                    if (!!response.ok) return [3 /*break*/, 4];
+                    return [4 /*yield*/, response.text()];
+                case 3:
                     errorText = _a.sent();
-                    throw new Error("Error en la petici\u00F3n a la API ".concat(apiUrl, ": ").concat(response.statusText, ". Respuesta: ").concat(errorText));
-                case 3: return [4 /*yield*/, response.json()];
-                case 4:
+                    throw new Error("Error en la petici\u00F3n a la API ".concat(nextLink, ": ").concat(response.statusText, ". Respuesta: ").concat(errorText));
+                case 4: return [4 /*yield*/, response.json()];
+                case 5:
                     data = _a.sent();
-                    return [2 /*return*/, data.value];
+                    results = results.concat(data.value);
+                    nextLink = data['@odata.nextLink'] || null;
+                    return [3 /*break*/, 1];
+                case 6: return [2 /*return*/, results];
             }
         });
     });
@@ -603,7 +612,7 @@ function main() {
                     token = _b.sent();
                     today = new Date();
                     tenDaysAgo = new Date(today);
-                    tenDaysAgo.setDate(today.getDate() - 5);
+                    tenDaysAgo.setDate(today.getDate() - 10);
                     formattedTenDaysAgo = formatDate(tenDaysAgo);
                     // --- PEDIDOS GENERALES ---
                     console.log('Procesando pedidos generales...');
@@ -710,7 +719,7 @@ function main() {
                                         : Object.values(firebaseMercadonaData);
                                     dataAsArray.forEach(function (pedido, index) {
                                         if (pedido) {
-                                            var key = pedido.plataforma === 'MICRO' ? 'MICRO' : pedido.plataforma.trim();
+                                            var key = pedido.plataforma === 'MICRO' ? "MICRO-".concat(pedido.numPedido, "-").concat(index) : pedido.plataforma.trim();
                                             firebaseMercadonaMap_1.set(key, __assign(__assign({}, pedido), { originalIndex: index }));
                                         }
                                     });
@@ -718,8 +727,8 @@ function main() {
                                     newMercadonaCount_1 = 0;
                                     updatedMercadonaCount_1 = 0;
                                     nextNewIndex_1 = dataAsArray.filter(Boolean).length;
-                                    pedidosMercadonaApi.forEach(function (pedidoApi) {
-                                        var key = pedidoApi.plataforma === 'MICRO' ? 'MICRO' : pedidoApi.plataforma.trim();
+                                    pedidosMercadonaApi.forEach(function (pedidoApi, apiIndex) {
+                                        var key = pedidoApi.plataforma === 'MICRO' ? "MICRO-".concat(pedidoApi.numPedido, "-").concat(apiIndex) : pedidoApi.plataforma.trim();
                                         var existingOrderData = firebaseMercadonaMap_1.get(key);
                                         if (!existingOrderData) {
                                             // Pedido nuevo
@@ -734,7 +743,6 @@ function main() {
                                             var mergedOrder = void 0;
                                             if (pedidoApi.plataforma === 'MICRO') {
                                                 var newProductos = pedidoApi.productos.map(function (apiPlat) {
-                                                    // Usar plataforma y numPedido como clave única
                                                     var platKey = "".concat(apiPlat.plataforma, "-").concat(apiPlat.numPedido);
                                                     var existingPlat = (existingOrder_1.productos || []).find(function (p) { return "".concat(p.plataforma, "-").concat(p.numPedido) === platKey; }) || {};
                                                     var subProductosMap = new Map();
