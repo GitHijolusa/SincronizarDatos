@@ -288,7 +288,7 @@ function agruparPedidosMercadona(lineasVenta) {
 // --- FUNCIONES PRINCIPALES DE OBTENCIÓN DE DATOS ---
 function fetchApiData(apiUrl, token) {
     return __awaiter(this, void 0, void 0, function () {
-        var results, nextLink, response, errorText, data;
+        var results, nextLink, response, errorText, data, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -296,25 +296,38 @@ function fetchApiData(apiUrl, token) {
                     nextLink = apiUrl;
                     _a.label = 1;
                 case 1:
-                    if (!nextLink) return [3 /*break*/, 6];
+                    if (!nextLink) return [3 /*break*/, 7];
+                    _a.label = 2;
+                case 2:
+                    _a.trys.push([2, 5, , 6]);
                     return [4 /*yield*/, fetch(nextLink, {
                             method: 'GET',
                             headers: { 'Authorization': "Bearer ".concat(token), 'Content-Type': 'application/json' },
                         })];
-                case 2:
-                    response = _a.sent();
-                    if (!!response.ok) return [3 /*break*/, 4];
-                    return [4 /*yield*/, response.text()];
                 case 3:
-                    errorText = _a.sent();
-                    throw new Error("Error en la petici\u00F3n a la API ".concat(nextLink, ": ").concat(response.statusText, ". Respuesta: ").concat(errorText));
-                case 4: return [4 /*yield*/, response.json()];
-                case 5:
+                    response = _a.sent();
+                    if (!response.ok) {
+                        throw new Error("Error en la petici\u00F3n a la API ".concat(nextLink, ": ").concat(response.statusText));
+                    }
+                    return [4 /*yield*/, response.json()];
+                case 4:
                     data = _a.sent();
                     results = results.concat(data.value);
                     nextLink = data['@odata.nextLink'] || null;
-                    return [3 /*break*/, 1];
-                case 6: return [2 /*return*/, results];
+                    return [3 /*break*/, 6];
+                case 5:
+                    error_2 = _a.sent();
+                    if (error_2 instanceof Error) {
+                        errorText = error_2.message;
+                    }
+                    else {
+                        errorText = 'Error desconocido';
+                    }
+                    console.error("Error en la petici\u00F3n a la API ".concat(nextLink, ". Respuesta: ").concat(errorText));
+                    nextLink = null; // Detener bucle en caso de error
+                    return [3 /*break*/, 6];
+                case 6: return [3 /*break*/, 1];
+                case 7: return [2 /*return*/, results];
             }
         });
     });
@@ -322,7 +335,7 @@ function fetchApiData(apiUrl, token) {
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
 function getPedidos(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var apiPath, tipoCliente, filtroTipoCliente, apiEndpoint, allLineasVenta, lineasConProducto, lineasPorCliente, lineasFiltradas, error_2;
+        var apiPath, tipoCliente, filtroTipoCliente, apiEndpoint, allLineasVenta, lineasConProducto, lineasPorCliente, lineasFiltradas, error_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -375,11 +388,11 @@ function getPedidos(token, date) {
                     });
                     return [2 /*return*/, lineasFiltradas];
                 case 3:
-                    error_2 = _a.sent();
-                    if (error_2 instanceof Error) {
-                        console.error('Ha ocurrido un error al obtener los datos:', error_2.message);
+                    error_3 = _a.sent();
+                    if (error_3 instanceof Error) {
+                        console.error('Ha ocurrido un error al obtener los datos:', error_3.message);
                     }
-                    throw error_2;
+                    throw error_3;
                 case 4: return [2 /*return*/];
             }
         });
@@ -388,7 +401,7 @@ function getPedidos(token, date) {
 //Función para obtener los pedidos de Mercadona
 function getPedidosMercadona(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var apiPath, cliente, filtroCliente, apiEndpoint, lineasVenta, lineasConProducto, lineasFiltradas, error_3;
+        var apiPath, cliente, filtroCliente, apiEndpoint, lineasVenta, lineasConProducto, lineasFiltradas, error_4;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -432,11 +445,11 @@ function getPedidosMercadona(token, date) {
                     });
                     return [2 /*return*/, lineasFiltradas];
                 case 3:
-                    error_3 = _a.sent();
-                    if (error_3 instanceof Error) {
-                        console.error('Ha ocurrido un error al obtener los datos de Mercadona:', error_3.message);
+                    error_4 = _a.sent();
+                    if (error_4 instanceof Error) {
+                        console.error('Ha ocurrido un error al obtener los datos de Mercadona:', error_4.message);
                     }
-                    throw error_3;
+                    return [2 /*return*/, []]; // Devuelve un array vacío en caso de error
                 case 4: return [2 /*return*/];
             }
         });
@@ -445,7 +458,7 @@ function getPedidosMercadona(token, date) {
 //Función para obtener las expediciones por hora de carga y plataforma
 function getHorasCarga(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDireccionesEnvio, urlExp, urlDirecciones, filtroExpCam, urlExpCamion, urlProveedores, horasCarga, _a, direcciones, expedicionesCamion, proveedores, direccionesMap_1, proveedoresMap_1, conductoresMap_1, expedicionesConCiudad, expedicionesConConductor, groupedByHora, result, error_4;
+        var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDireccionesEnvio, urlExp, urlDirecciones, filtroExpCam, urlExpCamion, urlProveedores, horasCarga, _a, direcciones, expedicionesCamion, proveedores, direccionesMap_1, proveedoresMap_1, conductoresMap_1, expedicionesConCiudad, expedicionesConConductor, groupedByHora, result, error_5;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -524,9 +537,9 @@ function getHorasCarga(token, date) {
                     }).filter(function (expedicion) { return expedicion.plataformas.length > 0; });
                     return [2 /*return*/, result];
                 case 4:
-                    error_4 = _b.sent();
-                    if (error_4 instanceof Error) {
-                        console.error("Ha ocurrido un error al obtener las horas carga Mercadona para la fecha ".concat(formattedDate, ":"), error_4.message);
+                    error_5 = _b.sent();
+                    if (error_5 instanceof Error) {
+                        console.error("Ha ocurrido un error al obtener las horas carga Mercadona para la fecha ".concat(formattedDate, ":"), error_5.message);
                     }
                     return [2 /*return*/, []]; // Devuelve un array vacío en caso de error
                 case 5: return [2 /*return*/];
@@ -555,7 +568,7 @@ function groupProducts(products) {
 //Función que obtiene los productos de cliente de la lista embalaje cliente/producto para seleccionar los productos de sobras
 function getProductosCliente() {
     return __awaiter(this, void 0, void 0, function () {
-        var idClientes, filtroClientes, apiEmbalajeClienteProducto, embalajeEndpoint, token, embalajeProducts, enrichedProducts, productosAgrupados, error_5;
+        var idClientes, filtroClientes, apiEmbalajeClienteProducto, embalajeEndpoint, token, embalajeProducts, enrichedProducts, productosAgrupados, error_6;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -576,9 +589,9 @@ function getProductosCliente() {
                     productosAgrupados = groupProducts(enrichedProducts);
                     return [2 /*return*/, productosAgrupados];
                 case 4:
-                    error_5 = _a.sent();
-                    if (error_5 instanceof Error) {
-                        console.error('Ha ocurrido un error al obtener los productos de cliente:', error_5.message);
+                    error_6 = _a.sent();
+                    if (error_6 instanceof Error) {
+                        console.error('Ha ocurrido un error al obtener los productos de cliente:', error_6.message);
                     }
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/];
@@ -589,7 +602,7 @@ function getProductosCliente() {
 // --- FUNCIÓN PRINCIPAL ---
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, today, sevenDaysAgo_1, formattedSevenDaysAgo, apiExp, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, apiOrderIds_1, _loop_1, i, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_6;
+        var token, today, sevenDaysAgo_1, formattedSevenDaysAgo, apiExp, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, apiOrderIds_1, _loop_1, i, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_7;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -846,7 +859,7 @@ function main() {
                     console.log("Horas de carga de Mercadona para ".concat(formattedDate, " guardadas en Firebase."));
                     return [3 /*break*/, 16];
                 case 15:
-                    console.log("No se encontraron horas de carga de Mercadona para ".concat(formattedDate, ", no se guardará nada."));
+                    console.log("No se encontraron horas de carga de Mercadona para ".concat(formattedDate, ", no se guardar\u00E1 nada."));
                     _a.label = 16;
                 case 16:
                     i++;
@@ -865,9 +878,9 @@ function main() {
                     console.log('\nSubida de datos completada con éxito.');
                     return [3 /*break*/, 21];
                 case 20:
-                    error_6 = _a.sent();
-                    if (error_6 instanceof Error) {
-                        console.error('Error en el proceso principal:', error_6.message);
+                    error_7 = _a.sent();
+                    if (error_7 instanceof Error) {
+                        console.error('Error en el proceso principal:', error_7.message);
                     }
                     else {
                         console.error('Ocurrió un error desconocido en el proceso principal.');
@@ -881,4 +894,4 @@ function main() {
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
 
-  
+    

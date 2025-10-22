@@ -420,19 +420,24 @@ async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
     let nextLink: string | null = apiUrl;
 
     while (nextLink) {
-        const response: Response = await fetch(nextLink, {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        });
+        try {
+            const response: Response = await fetch(nextLink, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Error en la petición a la API ${nextLink}: ${response.statusText}. Respuesta: ${errorText}`);
+            if (!response.ok) {
+                throw new Error(`Error en la petición a la API ${nextLink}: ${response.statusText}`);
+            }
+
+            const data: ApiResponse<T> = await response.json();
+            results = results.concat(data.value);
+            nextLink = data['@odata.nextLink'] || null;
+        } catch (error) {
+            const errorText = error instanceof Error ? error.message : 'Error desconocido';
+            console.error(`Error en la petición a la API ${nextLink}. Respuesta: ${errorText}`);
+            nextLink = null; // Detener bucle en caso de error
         }
-
-        const data: ApiResponse<T> = await response.json();
-        results = results.concat(data.value);
-        nextLink = data['@odata.nextLink'] || null;
     }
     
     return results;
@@ -513,6 +518,7 @@ async function getPedidosMercadona(token: string, date: string): Promise<LineasV
 
     try {
         const lineasVenta = await fetchApiData<LineasVentaMercadona>(apiEndpoint, token);
+
         const lineasConProducto = lineasVenta.filter(linea => {
             if (linea.NombreCliente === 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA' && linea.Plataforma === 'VILA NOVA DE GAIA') {
                 return false;
@@ -549,7 +555,7 @@ async function getPedidosMercadona(token: string, date: string): Promise<LineasV
         if (error instanceof Error) {
             console.error('Ha ocurrido un error al obtener los datos de Mercadona:', error.message);
         }
-        throw error;
+        return []; // Devuelve un array vacío en caso de error
     }
 }
 
@@ -1001,4 +1007,3 @@ async function main() {
 main();
 
     
-  
