@@ -417,31 +417,26 @@ function agruparPedidosMercadona(lineasVenta: LineasVentaMercadonaFiltrada[]) {
 // --- FUNCIONES PRINCIPALES DE OBTENCIÓN DE DATOS ---
 
 async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
-    let results: T[] = [];
-    let nextLink: string | null = apiUrl;
+    const separator = apiUrl.includes('?') ? '&' : '?';
+    const urlWithTop = `${apiUrl}${separator}$top=5000`;
 
-    while (nextLink) {
-        try {
-            const response = await fetch(nextLink, {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            });
+    try {
+        const response = await fetch(urlWithTop, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
 
-            if (!response.ok) {
-                throw new Error(`Error en la petición a la API ${nextLink}: ${response.statusText}`);
-            }
-
-            const data: ApiResponse<T> = await response.json();
-            results = results.concat(data.value);
-            nextLink = data['@odata.nextLink'] || null;
-        } catch (error) {
-            const errorText = error instanceof Error ? error.message : 'Error desconocido';
-            console.error(`Error en la petición a la API ${apiUrl}. Respuesta: ${errorText}`);
-            nextLink = null; // Detener bucle en caso de error
+        if (!response.ok) {
+            throw new Error(`Error en la petición a la API ${urlWithTop}: ${response.statusText}`);
         }
+
+        const data: ApiResponse<T> = await response.json();
+        return data.value || [];
+    } catch (error) {
+        const errorText = error instanceof Error ? error.message : 'Error desconocido';
+        console.error(`Error en la petición a la API ${urlWithTop}. Respuesta: ${errorText}`);
+        return []; // Devuelve un array vacío en caso de error
     }
-    
-    return results;
 }
 
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona

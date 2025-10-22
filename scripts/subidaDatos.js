@@ -289,41 +289,34 @@ function agruparPedidosMercadona(lineasVenta) {
 // --- FUNCIONES PRINCIPALES DE OBTENCIÓN DE DATOS ---
 function fetchApiData(apiUrl, token) {
     return __awaiter(this, void 0, void 0, function () {
-        var results, nextLink, response, errorText, data, error_2;
+        var separator, urlWithTop, response, errorText, data, error_2;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    results = [];
-                    nextLink = apiUrl;
+                    separator = apiUrl.includes('?') ? '&' : '?';
+                    urlWithTop = "".concat(apiUrl).concat(separator, "$top=5000");
                     _a.label = 1;
                 case 1:
-                    if (!nextLink) return [3 /*break*/, 7];
-                    _a.label = 2;
-                case 2:
-                    _a.trys.push([2, 5, , 6]);
-                    return [4 /*yield*/, fetch(nextLink, {
+                    _a.trys.push([1, 4, , 5]);
+                    return [4 /*yield*/, fetch(urlWithTop, {
                             method: 'GET',
                             headers: { 'Authorization': "Bearer ".concat(token), 'Content-Type': 'application/json' },
                         })];
-                case 3:
+                case 2:
                     response = _a.sent();
                     if (!response.ok) {
-                        throw new Error("Error en la petici\u00F3n a la API ".concat(nextLink, ": ").concat(response.statusText));
+                        throw new Error("Error en la petici\u00F3n a la API ".concat(urlWithTop, ": ").concat(response.statusText));
                     }
                     return [4 /*yield*/, response.json()];
-                case 4:
+                case 3:
                     data = _a.sent();
-                    results = results.concat(data.value);
-                    nextLink = data['@odata.nextLink'] || null;
-                    return [3 /*break*/, 6];
-                case 5:
+                    return [2 /*return*/, data.value || []];
+                case 4:
                     error_2 = _a.sent();
                     errorText = error_2 instanceof Error ? error_2.message : 'Error desconocido';
-                    console.error("Error en la petici\u00F3n a la API ".concat(apiUrl, ". Respuesta: ").concat(errorText));
-                    nextLink = null; // Detener bucle en caso de error
-                    return [3 /*break*/, 6];
-                case 6: return [3 /*break*/, 1];
-                case 7: return [2 /*return*/, results];
+                    console.error("Error en la petici\u00F3n a la API ".concat(urlWithTop, ". Respuesta: ").concat(errorText));
+                    return [2 /*return*/, []]; // Devuelve un array vacío en caso de error
+                case 5: return [2 /*return*/];
             }
         });
     });
