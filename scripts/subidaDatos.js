@@ -1,3 +1,4 @@
+
 "use strict";
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -317,13 +318,8 @@ function fetchApiData(apiUrl, token) {
                     return [3 /*break*/, 6];
                 case 5:
                     error_2 = _a.sent();
-                    if (error_2 instanceof Error) {
-                        errorText = error_2.message;
-                    }
-                    else {
-                        errorText = 'Error desconocido';
-                    }
-                    console.error("Error en la petici\u00F3n a la API ".concat(nextLink, ". Respuesta: ").concat(errorText));
+                    errorText = error_2 instanceof Error ? error_2.message : 'Error desconocido';
+                    console.error("Error en la petici\u00F3n a la API ".concat(apiUrl, ". Respuesta: ").concat(errorText));
                     nextLink = null; // Detener bucle en caso de error
                     return [3 /*break*/, 6];
                 case 6: return [3 /*break*/, 1];
@@ -893,7 +889,3 @@ function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
-
-    
-
-    

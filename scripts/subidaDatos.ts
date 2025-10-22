@@ -1,3 +1,4 @@
+
 import { ExpedicionAgrupada, ExpedicionPorPlataforma, Order, Product } from '../src/lib/types';
 import { database } from '../firebaseConfig.js';
 import { ref, update, get, set, remove } from 'firebase/database';
@@ -421,7 +422,7 @@ async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
 
     while (nextLink) {
         try {
-            const response: Response = await fetch(nextLink, {
+            const response = await fetch(nextLink, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             });
@@ -435,7 +436,7 @@ async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
             nextLink = data['@odata.nextLink'] || null;
         } catch (error) {
             const errorText = error instanceof Error ? error.message : 'Error desconocido';
-            console.error(`Error en la petición a la API ${nextLink}. Respuesta: ${errorText}`);
+            console.error(`Error en la petición a la API ${apiUrl}. Respuesta: ${errorText}`);
             nextLink = null; // Detener bucle en caso de error
         }
     }
