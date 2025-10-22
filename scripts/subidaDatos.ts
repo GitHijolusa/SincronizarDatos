@@ -803,7 +803,10 @@ async function main() {
         });
         
         firebaseOrderMap.forEach(order => {
-            if (!apiOrderIds.has(order.id)) {
+            const orderDate = new Date(order.originalDate);
+            const isAfterStartDate = orderDate >= sevenDaysAgo;
+    
+            if (!apiOrderIds.has(order.id) && isAfterStartDate) {
                 const path = `allOrders/${order.originalDate}/${order.id}`;
                 updates[path] = null;
                 deletedOrdersCount++;
@@ -821,8 +824,8 @@ async function main() {
         console.log('\nProcesando pedidos de Mercadona para los últimos 7 días...');
 
         for (let i = 0; i < 7; i++) {
-            const processDate = new Date(sevenDaysAgo);
-            processDate.setDate(processDate.getDate() + i);
+            const processDate = new Date(today);
+            processDate.setDate(today.getDate() - i);
             const fecha = formatDate(processDate);
 
             console.log(`Procesando Mercadona para fecha: ${fecha}`);
@@ -996,3 +999,5 @@ async function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
+
+    

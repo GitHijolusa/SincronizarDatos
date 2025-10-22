@@ -20,8 +20,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
-    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -674,7 +674,9 @@ function main() {
                         }
                     });
                     firebaseOrderMap_1.forEach(function (order) {
-                        if (!apiOrderIds_1.has(order.id)) {
+                        var orderDate = new Date(order.originalDate);
+                        var isAfterStartDate = orderDate >= sevenDaysAgo;
+                        if (!apiOrderIds_1.has(order.id) && isAfterStartDate) {
                             var path = "allOrders/".concat(order.originalDate, "/").concat(order.id);
                             updates_1[path] = null;
                             deletedOrdersCount_1++;
@@ -697,8 +699,8 @@ function main() {
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
-                                    processDate = new Date(sevenDaysAgo);
-                                    processDate.setDate(processDate.getDate() + i);
+                                    processDate = new Date(today);
+                                    processDate.setDate(today.getDate() - i);
                                     fecha = formatDate(processDate);
                                     console.log("Procesando Mercadona para fecha: ".concat(fecha));
                                     return [4 /*yield*/, getPedidosMercadona(token, fecha)];
@@ -878,3 +880,5 @@ function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
+
+    
