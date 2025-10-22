@@ -337,6 +337,7 @@ function getPedidos(token, date) {
                 case 2:
                     allLineasVenta = _a.sent();
                     lineasConProducto = allLineasVenta.filter(function (linea) { return linea.No && linea.No.trim() !== ''; });
+                    lineasPorCliente = void 0;
                     lineasPorCliente = lineasConProducto.filter(function (linea) {
                         var cliente = linea.NombreCliente;
                         var tipoCliente = linea.TipoCliente;
@@ -588,11 +589,11 @@ function getProductosCliente() {
 // --- FUNCIÓN PRINCIPAL ---
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, today, sevenDaysAgo, formattedSevenDaysAgo, apiExp, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, apiOrderIds_1, i, processDate, fecha, mercadonaLinesData, pedidosMercadonaApi, mercadonaRef, snapshotMercadona, firebaseMercadonaData, firebaseMercadonaMap_1, dataAsArray, mercadonaUpdates_1, newMercadonaCount_1, updatedMercadonaCount_1, deletedMercadonaCount_1, nextNewIndex_1, apiKeys_1, mercadonaRef, snapshot_1, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_6;
+        var token, today, sevenDaysAgo, formattedSevenDaysAgo, apiExp, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, apiOrderIds_1, _loop_1, i, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_6;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    _a.trys.push([0, 26, , 27]);
+                    _a.trys.push([0, 20, , 21]);
                     console.log('Iniciando subida de datos...');
                     return [4 /*yield*/, getAccessToken()];
                 case 1:
@@ -691,172 +692,177 @@ function main() {
                 case 7:
                     // --- PEDIDOS MERCADONA ---
                     console.log('\nProcesando pedidos de Mercadona para los últimos 7 días...');
+                    _loop_1 = function (i) {
+                        var processDate, fecha, mercadonaLinesData, pedidosMercadonaApi, mercadonaRef, snapshotMercadona, firebaseMercadonaData, firebaseMercadonaMap_1, dataAsArray, mercadonaUpdates_1, newMercadonaCount_1, updatedMercadonaCount_1, deletedMercadonaCount_1, nextNewIndex_1, apiKeys_1, mercadonaRef, snapshot_1;
+                        return __generator(this, function (_b) {
+                            switch (_b.label) {
+                                case 0:
+                                    processDate = new Date(sevenDaysAgo);
+                                    processDate.setDate(processDate.getDate() + i);
+                                    fecha = formatDate(processDate);
+                                    console.log("Procesando Mercadona para fecha: ".concat(fecha));
+                                    return [4 /*yield*/, getPedidosMercadona(token, fecha)];
+                                case 1:
+                                    mercadonaLinesData = _b.sent();
+                                    if (!(mercadonaLinesData.length > 0)) return [3 /*break*/, 6];
+                                    pedidosMercadonaApi = agruparPedidosMercadona(mercadonaLinesData);
+                                    mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
+                                    return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
+                                case 2:
+                                    snapshotMercadona = _b.sent();
+                                    firebaseMercadonaData = snapshotMercadona.val() || [];
+                                    firebaseMercadonaMap_1 = new Map();
+                                    dataAsArray = Array.isArray(firebaseMercadonaData)
+                                        ? firebaseMercadonaData
+                                        : Object.values(firebaseMercadonaData);
+                                    dataAsArray.forEach(function (pedido, index) {
+                                        if (pedido) {
+                                            var key = pedido.plataforma === 'MICRO' ? "MICRO-".concat(pedido.numPedido) : "".concat(pedido.plataforma.trim());
+                                            firebaseMercadonaMap_1.set(key, __assign(__assign({}, pedido), { originalIndex: index }));
+                                        }
+                                    });
+                                    mercadonaUpdates_1 = {};
+                                    newMercadonaCount_1 = 0;
+                                    updatedMercadonaCount_1 = 0;
+                                    deletedMercadonaCount_1 = 0;
+                                    nextNewIndex_1 = dataAsArray.filter(Boolean).length;
+                                    apiKeys_1 = new Set();
+                                    pedidosMercadonaApi.forEach(function (pedidoApi) {
+                                        var key = pedidoApi.plataforma === 'MICRO' ? "MICRO-".concat(pedidoApi.numPedido) : "".concat(pedidoApi.plataforma.trim());
+                                        apiKeys_1.add(key);
+                                        var existingOrderData = firebaseMercadonaMap_1.get(key);
+                                        if (!existingOrderData) {
+                                            // Pedido nuevo
+                                            var newOrder = __assign(__assign({}, pedidoApi), { isNew: true, productos: (pedidoApi.productos || []).map(function (p) { return (__assign(__assign({}, p), { checkState: 'unchecked', note: '' })); }) });
+                                            mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(nextNewIndex_1)] = newOrder;
+                                            newMercadonaCount_1++;
+                                            nextNewIndex_1++;
+                                        }
+                                        else {
+                                            // Pedido existente, fusionar y comprobar cambios
+                                            var originalIndex = existingOrderData.originalIndex, existingOrder_1 = __rest(existingOrderData, ["originalIndex"]);
+                                            var mergedOrder = void 0;
+                                            if (pedidoApi.plataforma === 'MICRO') {
+                                                var newProductos = pedidoApi.productos.map(function (apiPlat) {
+                                                    var platKey = "".concat(apiPlat.plataforma.trim(), "-").concat(apiPlat.numPedido);
+                                                    var existingPlat = (existingOrder_1.productos || []).find(function (p) { return "".concat(p.plataforma.trim(), "-").concat(p.numPedido) === platKey; }) || {};
+                                                    var subProductosMap = new Map();
+                                                    (existingPlat.subProductos || []).forEach(function (sub) { return subProductosMap.set(sub.linea, sub); });
+                                                    var newSubProductos = apiPlat.subProductos.map(function (apiSub) {
+                                                        var _a, _b, _c, _d;
+                                                        var existingSub = subProductosMap.get(apiSub.linea);
+                                                        return __assign(__assign({}, apiSub), { checkState: (_a = existingSub === null || existingSub === void 0 ? void 0 : existingSub.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingSub === null || existingSub === void 0 ? void 0 : existingSub.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingSub === null || existingSub === void 0 ? void 0 : existingSub.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingSub === null || existingSub === void 0 ? void 0 : existingSub.origen) !== null && _d !== void 0 ? _d : '' });
+                                                    });
+                                                    return __assign(__assign({}, apiPlat), { subProductos: newSubProductos });
+                                                });
+                                                mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
+                                                if (existingOrder_1.status) {
+                                                    mergedOrder.status = existingOrder_1.status;
+                                                }
+                                            }
+                                            else {
+                                                // Lógica de fusión para pedidos normales de Mercadona
+                                                var productosMap_1 = new Map();
+                                                (existingOrder_1.productos || []).forEach(function (p) { return productosMap_1.set(p.linea, p); });
+                                                var newProductos = (pedidoApi.productos || []).map(function (apiProduct) {
+                                                    var _a, _b, _c, _d;
+                                                    var existingProduct = productosMap_1.get(apiProduct.linea);
+                                                    return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.origen) !== null && _d !== void 0 ? _d : '' });
+                                                });
+                                                mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
+                                                if (existingOrder_1.status) {
+                                                    mergedOrder.status = existingOrder_1.status;
+                                                }
+                                            }
+                                            if (!(0, lodash_1.isEqual)(existingOrder_1, mergedOrder)) {
+                                                mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(originalIndex)] = mergedOrder;
+                                                updatedMercadonaCount_1++;
+                                            }
+                                        }
+                                    });
+                                    firebaseMercadonaMap_1.forEach(function (order, key) {
+                                        if (!apiKeys_1.has(key)) {
+                                            mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(order.originalIndex)] = null;
+                                            deletedMercadonaCount_1++;
+                                        }
+                                    });
+                                    if (!(Object.keys(mercadonaUpdates_1).length > 0)) return [3 /*break*/, 4];
+                                    return [4 /*yield*/, (0, database_1.update)((0, database_1.ref)(firebaseConfig_js_1.database), mercadonaUpdates_1)];
+                                case 3:
+                                    _b.sent();
+                                    console.log("Mercadona (".concat(fecha, "): ").concat(newMercadonaCount_1, " nuevos a\u00F1adidos, ").concat(updatedMercadonaCount_1, " actualizados, ").concat(deletedMercadonaCount_1, " eliminados."));
+                                    return [3 /*break*/, 5];
+                                case 4:
+                                    console.log("Mercadona (".concat(fecha, "): Sin cambios."));
+                                    _b.label = 5;
+                                case 5: return [3 /*break*/, 9];
+                                case 6:
+                                    mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
+                                    return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
+                                case 7:
+                                    snapshot_1 = _b.sent();
+                                    if (!snapshot_1.exists()) return [3 /*break*/, 9];
+                                    return [4 /*yield*/, (0, database_1.remove)(mercadonaRef)];
+                                case 8:
+                                    _b.sent();
+                                    console.log("Mercadona (".concat(fecha, "): Eliminados todos los pedidos de Firebase porque no se encontraron en la API."));
+                                    _b.label = 9;
+                                case 9: return [2 /*return*/];
+                            }
+                        });
+                    };
                     i = 0;
                     _a.label = 8;
                 case 8:
-                    if (!(i < 7)) return [3 /*break*/, 21];
-                    processDate = new Date(sevenDaysAgo);
-                    processDate.setDate(processDate.getDate() + i);
-                    fecha = formatDate(processDate);
-                    console.log("Procesando Mercadona para fecha: ".concat(fecha));
-                    return [4 /*yield*/, getPedidosMercadona(token, fecha)];
+                    if (!(i < 7)) return [3 /*break*/, 11];
+                    return [5 /*yield**/, _loop_1(i)];
                 case 9:
-                    mercadonaLinesData = _a.sent();
-                    if (!(mercadonaLinesData.length > 0)) return [3 /*break*/, 18];
-                    pedidosMercadonaApi = agruparPedidosMercadona(mercadonaLinesData);
-                    mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
-                    return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
+                    _a.sent();
+                    _a.label = 10;
                 case 10:
-                    snapshotMercadona = _a.sent();
-                    firebaseMercadonaData = snapshotMercadona.val() || [];
-                    firebaseMercadonaMap_1 = new Map();
-                    dataAsArray = Array.isArray(firebaseMercadonaData)
-                        ? firebaseMercadonaData
-                        : Object.values(firebaseMercadonaData);
-                    dataAsArray.forEach(function (pedido, index) {
-                        if (pedido) {
-                            var key = pedido.plataforma === 'MICRO' ? "MICRO-".concat(pedido.numPedido) : "".concat(pedido.plataforma.trim());
-                            firebaseMercadonaMap_1.set(key, __assign(__assign({}, pedido), { originalIndex: index }));
-                        }
-                    });
-                    mercadonaUpdates_1 = {};
-                    newMercadonaCount_1 = 0;
-                    updatedMercadonaCount_1 = 0;
-                    deletedMercadonaCount_1 = 0;
-                    nextNewIndex_1 = dataAsArray.filter(Boolean).length;
-                    apiKeys_1 = new Set();
-                    pedidosMercadonaApi.forEach(function (pedidoApi) {
-                        var key = pedidoApi.plataforma === 'MICRO' ? "MICRO-".concat(pedidoApi.numPedido) : "".concat(pedidoApi.plataforma.trim());
-                        apiKeys_1.add(key);
-                        var existingOrderData = firebaseMercadonaMap_1.get(key);
-                        if (!existingOrderData) {
-                            // Pedido nuevo
-                            var newOrder = __assign(__assign({}, pedidoApi), { isNew: true, productos: (pedidoApi.productos || []).map(function (p) { return (__assign(__assign({}, p), { checkState: 'unchecked', note: '' })); }) });
-                            mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(nextNewIndex_1)] = newOrder;
-                            newMercadonaCount_1++;
-                            nextNewIndex_1++;
-                        }
-                        else {
-                            // Pedido existente, fusionar y comprobar cambios
-                            var originalIndex = existingOrderData.originalIndex, existingOrder_1 = __rest(existingOrderData, ["originalIndex"]);
-                            var mergedOrder = void 0;
-                            if (pedidoApi.plataforma === 'MICRO') {
-                                var newProductos = pedidoApi.productos.map(function (apiPlat) {
-                                    var platKey = "".concat(apiPlat.plataforma.trim(), "-").concat(apiPlat.numPedido);
-                                    var existingPlat = (existingOrder_1.productos || []).find(function (p) { return "".concat(p.plataforma.trim(), "-").concat(p.numPedido) === platKey; }) || {};
-                                    var subProductosMap = new Map();
-                                    (existingPlat.subProductos || []).forEach(function (sub) { return subProductosMap.set(sub.linea, sub); });
-                                    var newSubProductos = apiPlat.subProductos.map(function (apiSub) {
-                                        var _a, _b, _c, _d;
-                                        var existingSub = subProductosMap.get(apiSub.linea);
-                                        return __assign(__assign({}, apiSub), { checkState: (_a = existingSub === null || existingSub === void 0 ? void 0 : existingSub.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingSub === null || existingSub === void 0 ? void 0 : existingSub.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingSub === null || existingSub === void 0 ? void 0 : existingSub.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingSub === null || existingSub === void 0 ? void 0 : existingSub.origen) !== null && _d !== void 0 ? _d : '' });
-                                    });
-                                    return __assign(__assign({}, apiPlat), { subProductos: newSubProductos });
-                                });
-                                mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
-                                if (existingOrder_1.status) {
-                                    mergedOrder.status = existingOrder_1.status;
-                                }
-                            }
-                            else {
-                                // Lógica de fusión para pedidos normales de Mercadona
-                                var productosMap_1 = new Map();
-                                (existingOrder_1.productos || []).forEach(function (p) { return productosMap_1.set(p.linea, p); });
-                                var newProductos = (pedidoApi.productos || []).map(function (apiProduct) {
-                                    var _a, _b, _c, _d;
-                                    var existingProduct = productosMap_1.get(apiProduct.linea);
-                                    return __assign(__assign({}, apiProduct), { checkState: (_a = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.checkState) !== null && _a !== void 0 ? _a : 'unchecked', note: (_b = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.note) !== null && _b !== void 0 ? _b : '', variedad: (_c = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.variedad) !== null && _c !== void 0 ? _c : '', origen: (_d = existingProduct === null || existingProduct === void 0 ? void 0 : existingProduct.origen) !== null && _d !== void 0 ? _d : '' });
-                                });
-                                mergedOrder = __assign(__assign(__assign({}, existingOrder_1), pedidoApi), { productos: newProductos });
-                                if (existingOrder_1.status) {
-                                    mergedOrder.status = existingOrder_1.status;
-                                }
-                            }
-                            if (!(0, lodash_1.isEqual)(existingOrder_1, mergedOrder)) {
-                                mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(originalIndex)] = mergedOrder;
-                                updatedMercadonaCount_1++;
-                            }
-                        }
-                    });
-                    firebaseMercadonaMap_1.forEach(function (order, key) {
-                        if (!apiKeys_1.has(key)) {
-                            mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(order.originalIndex)] = null;
-                            deletedMercadonaCount_1++;
-                        }
-                    });
-                    if (!(Object.keys(mercadonaUpdates_1).length > 0)) return [3 /*break*/, 12];
-                    return [4 /*yield*/, (0, database_1.update)((0, database_1.ref)(firebaseConfig_js_1.database), mercadonaUpdates_1)];
-                case 11:
-                    _a.sent();
-                    console.log("Mercadona (".concat(fecha, "): ").concat(newMercadonaCount_1, " nuevos a\u00F1adidos, ").concat(updatedMercadonaCount_1, " actualizados, ").concat(deletedMercadonaCount_1, " eliminados."));
-                    return [3 /*break*/, 13];
-                case 12:
-                    console.log("Mercadona (".concat(fecha, "): Sin cambios."));
-                    _a.label = 13;
-                case 13: return [3 /*break*/, 17];
-                case 14:
-                    mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
-                    return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
-                case 15:
-                    snapshot_1 = _a.sent();
-                    if (!snapshot_1.exists()) return [3 /*break*/, 17];
-                    return [4 /*yield*/, (0, database_1.remove)(mercadonaRef)];
-                case 16:
-                    _a.sent();
-                    console.log("Mercadona (".concat(fecha, "): Eliminados todos los pedidos de Firebase porque no se encontraron en la API."));
-                    _a.label = 17;
-                case 17: return [3 /*break*/, 20];
-                case 18:
-                    console.log("Mercadona (".concat(fecha, "): No se encontraron pedidos, limpiando si existen en Firebase..."));
-                    return [4 /*yield*/, (0, database_1.set)((0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha)), null)];
-                case 19:
-                    _a.sent();
-                    console.log("Mercadona (".concat(fecha, "): Limpieza completada."));
-                    _a.label = 20;
-                case 20:
                     i++;
                     return [3 /*break*/, 8];
-                case 21:
+                case 11:
                     // --- HORAS CARGA MERCADONA ---
                     console.log('\nProcesando horas de carga de Mercadona para los últimos días...');
                     i = -2;
-                    _a.label = 22;
-                case 22:
-                    if (!(i < 3)) return [3 /*break*/, 27];
+                    _a.label = 12;
+                case 12:
+                    if (!(i < 3)) return [3 /*break*/, 17];
                     targetDate = new Date();
                     targetDate.setDate(today.getDate() - i);
                     formattedDate = formatDate(targetDate);
                     console.log("Obteniendo horas de carga para ".concat(formattedDate, "..."));
                     return [4 /*yield*/, getHorasCarga(token, targetDate)];
-                case 23:
+                case 13:
                     horasCargaData = _a.sent();
-                    if (!(horasCargaData && horasCargaData.length > 0)) return [3 /*break*/, 25];
+                    if (!(horasCargaData && horasCargaData.length > 0)) return [3 /*break*/, 15];
                     horasCargaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "horasCargaMercadona/".concat(formattedDate));
                     return [4 /*yield*/, (0, database_1.set)(horasCargaRef, horasCargaData)];
-                case 24:
+                case 14:
                     _a.sent();
                     console.log("Horas de carga de Mercadona para ".concat(formattedDate, " guardadas en Firebase."));
-                    return [3 /*break*/, 26];
-                case 25:
-                    console.log("No se encontraron horas de carga de Mercadona para ".concat(formattedDate, ", no se guardará nada."));
-                    _a.label = 26;
-                case 26:
+                    return [3 /*break*/, 16];
+                case 15:
+                    console.log("No se encontraron horas de carga de Mercadona para ".concat(formattedDate, ", no se guardar\u00E1 nada."));
+                    _a.label = 16;
+                case 16:
                     i++;
-                    return [3 /*break*/, 22];
-                case 27:
+                    return [3 /*break*/, 12];
+                case 17:
                     // --- PRODUCTOS CLIENTE ---
                     console.log('\nProcesando productos de cliente...');
                     return [4 /*yield*/, getProductosCliente()];
-                case 28:
+                case 18:
                     productosCliente = _a.sent();
                     productosClienteRef = (0, database_1.ref)(firebaseConfig_js_1.database, 'productosCliente');
                     return [4 /*yield*/, (0, database_1.set)(productosClienteRef, productosCliente)];
-                case 29:
+                case 19:
                     _a.sent();
                     console.log('Productos de cliente guardados en Firebase.');
                     console.log('\nSubida de datos completada con éxito.');
-                    return [3 /*break*/, 31];
-                case 30:
+                    return [3 /*break*/, 21];
+                case 20:
                     error_6 = _a.sent();
                     if (error_6 instanceof Error) {
                         console.error('Error en el proceso principal:', error_6.message);
@@ -864,8 +870,8 @@ function main() {
                     else {
                         console.error('Ocurrió un error desconocido en el proceso principal.');
                     }
-                    return [3 /*break*/, 31];
-                case 31: return [2 /*return*/];
+                    return [3 /*break*/, 21];
+                case 21: return [2 /*return*/];
             }
         });
     });

@@ -12,6 +12,11 @@ interface TokenResponse {
     expires_in: number;
 }
 
+interface ApiResponse<T> {
+    value: T[];
+    '@odata.nextLink'?: string;
+}
+
 interface LineasVentaAPI {
     Document_No: string;
     Line_No: number;
@@ -425,8 +430,8 @@ async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
             throw new Error(`Error en la petición a la API ${nextLink}: ${response.statusText}. Respuesta: ${errorText}`);
         }
 
-        const data = await response.json();
-        results = results.concat(data.value as T[]);
+        const data: ApiResponse<T> = await response.json();
+        results = results.concat(data.value);
         nextLink = data['@odata.nextLink'] || null;
     }
     
