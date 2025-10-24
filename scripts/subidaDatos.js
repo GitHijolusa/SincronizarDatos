@@ -856,5 +856,3 @@ function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
-
-    

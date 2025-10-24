@@ -182,7 +182,6 @@ interface EnrichedProduct {
 }
   
 // --- CONFIGURACIÓN ---
-
 const myClientSecret = 'ik.8Q~1ehaUuSHYU2Uc7IWxf7dDfbz5f2TTndbwc';
 
 // --- FUNCIONES AUXILIARES ---
@@ -986,5 +985,3 @@ async function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
-
-    
