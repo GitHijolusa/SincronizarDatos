@@ -51,14 +51,10 @@ var firebaseConfig_js_1 = require("../firebaseConfig.js");
 var database_1 = require("firebase/database");
 var lodash_1 = require("lodash");
 var clientes_config_1 = require("../config/clientes_config");
+var ServiciosWeb_config_1 = require("../config/ServiciosWeb_config");
+var usuario_config_1 = require("../config/usuario_config");
 // --- CONFIGURACIÓN ---
-var tokenEndpoint = 'https://login.microsoftonline.com/eaef5c77-b0af-4131-81cf-ceb195e3389c/oauth2/v2.0/token';
-var baseUrl = 'https://api.businesscentral.dynamics.com/v2.0/eaef5c77-b0af-4131-81cf-ceb195e3389c/Production/ODataV4/';
-var companyName = 'Patatas%20Hijolusa%2C%20S.A.U';
-var encodeCompany = encodeURIComponent(companyName);
-var myClientId = '39f3eb2e-e404-4648-aebf-6fdcf9883134';
 var myClientSecret = 'ik.8Q~1ehaUuSHYU2Uc7IWxf7dDfbz5f2TTndbwc';
-var scope = 'https://api.businesscentral.dynamics.com/.default';
 // --- FUNCIONES AUXILIARES ---
 var clientNames = {
     "C-00429": "AHORRAMAS",
@@ -80,14 +76,14 @@ function getAccessToken() {
                 case 0:
                     body = new URLSearchParams({
                         'grant_type': 'client_credentials',
-                        'client_id': myClientId,
+                        'client_id': usuario_config_1.idCliente,
                         'client_secret': myClientSecret,
-                        'scope': scope,
+                        'scope': usuario_config_1.scopeBC,
                     });
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 6, , 7]);
-                    return [4 /*yield*/, fetch(tokenEndpoint, {
+                    return [4 /*yield*/, fetch(usuario_config_1.apiToken, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                             body: body,
@@ -318,14 +314,13 @@ function fetchApiData(apiUrl, token) {
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
 function getPedidos(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var apiPath, tipoCliente, filtroTipoCliente, apiEndpoint, allLineasVenta, lineasConProducto, lineasPorCliente, lineasFiltradas, error_3;
+        var tipoCliente, filtroTipoCliente, apiEndpoint, allLineasVenta, lineasConProducto, lineasPorCliente, lineasFiltradas, error_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    apiPath = 'ConsultaLineasVenta';
                     tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS'];
                     filtroTipoCliente = tipoCliente.map(function (tipo) { return "TipoCliente eq '".concat(tipo, "'"); }).join(' or ');
-                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (").concat(filtroTipoCliente, ") and Order_Date ge ").concat(date);
+                    apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (").concat(filtroTipoCliente, ") and Order_Date ge ").concat(date);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -384,14 +379,13 @@ function getPedidos(token, date) {
 //Función para obtener los pedidos de Mercadona
 function getPedidosMercadona(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var apiPath, cliente, filtroCliente, apiEndpoint, lineasVenta, lineasConProducto, lineasFiltradas, error_4;
+        var cliente, filtroCliente, apiEndpoint, lineasVenta, lineasConProducto, lineasFiltradas, error_4;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    apiPath = 'ConsultaLineasVenta';
                     cliente = ['C-00133', 'C-00656'];
                     filtroCliente = cliente.map(function (id) { return "Sell_to_Customer_No eq '".concat(id, "'"); }).join(' or ');
-                    apiEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiPath, "?$filter=startswith(Document_No, 'PV') and (").concat(filtroCliente, ") and Order_Date eq ").concat(date);
+                    apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$filter=startswith(Document_No, 'PV') and (").concat(filtroCliente, ") and Order_Date eq ").concat(date);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -441,22 +435,22 @@ function getPedidosMercadona(token, date) {
 //Función para obtener las expediciones por hora de carga y plataforma
 function getHorasCarga(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDireccionesEnvio, urlExp, urlDirecciones, filtroExpCam, urlExpCamion, urlProveedores, horasCarga, _a, direcciones, expedicionesCamion, proveedores, direccionesMap_1, proveedoresMap_1, conductoresMap_1, expedicionesConCiudad, expedicionesConConductor, groupedByHora, result, error_5;
+        var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDirEnvio, urlExp, urlDirecciones, filtroExpCam, urlExpCamion, urlProveedores, horasCarga, _a, direcciones, expedicionesCamion, proveedores, direccionesMap_1, proveedoresMap_1, conductoresMap_1, expedicionesConCiudad, expedicionesConConductor, groupedByHora, result, error_5;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     formattedDate = formatDate(date);
                     clientes = ['MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA'];
                     filtroExp = clientes.map(function (cliente) { return "NombreCliente eq '".concat(cliente.replace("'", "''"), "'"); }).join(' or ');
-                    apiExp = "lineasExpdici%C3%B3n?$filter=(".concat(filtroExp, ") and FechaEnvio eq ").concat(formattedDate);
+                    apiExp = "".concat(ServiciosWeb_config_1.apiExpediciones, "?$filter=(").concat(filtroExp, ") and FechaEnvio eq ").concat(formattedDate);
                     idClientes = ['C-00133', 'C-00656'];
                     direccionEnvioFilter = idClientes.map(function (id) { return "Customer_No eq '".concat(id, "'"); }).join(' or ');
-                    apiDireccionesEnvio = "DireccionesEnvio?$filter=(".concat(direccionEnvioFilter, ")");
-                    urlExp = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiExp);
-                    urlDirecciones = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiDireccionesEnvio);
-                    filtroExpCam = "Expediciones?$filter=(FechaEnvio eq ".concat(formattedDate, ")");
-                    urlExpCamion = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(filtroExpCam);
-                    urlProveedores = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/Proveedores");
+                    apiDirEnvio = "".concat(ServiciosWeb_config_1.apiDireccionesEnvio, "?$filter=(").concat(direccionEnvioFilter, ")");
+                    urlExp = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(apiExp);
+                    urlDirecciones = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(apiDirEnvio);
+                    filtroExpCam = "".concat(ServiciosWeb_config_1.apiExpedicionesCamion, "?$filter=(FechaEnvio eq ").concat(formattedDate, ")");
+                    urlExpCamion = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(filtroExpCam);
+                    urlProveedores = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiProveedores);
                     _b.label = 1;
                 case 1:
                     _b.trys.push([1, 4, , 5]);
@@ -551,14 +545,13 @@ function groupProducts(products) {
 //Función que obtiene los productos de cliente de la lista embalaje cliente/producto para seleccionar los productos de sobras
 function getProductosCliente() {
     return __awaiter(this, void 0, void 0, function () {
-        var idClientes, filtroClientes, apiEmbalajeClienteProducto, embalajeEndpoint, token, embalajeProducts, enrichedProducts, productosAgrupados, error_6;
+        var idClientes, filtroClientes, embalajeEndpoint, token, embalajeProducts, enrichedProducts, productosAgrupados, error_6;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     idClientes = ['C-00429', 'C-00988', 'C-01142', 'C-00071'];
                     filtroClientes = idClientes.map(function (id) { return "Cliente eq '".concat(id, "'"); }).join(' or ');
-                    apiEmbalajeClienteProducto = "EmblajeClienteProducto?$filter=(".concat(filtroClientes, ")");
-                    embalajeEndpoint = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiEmbalajeClienteProducto);
+                    embalajeEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiEmbalajeClienteProducto, "?$filter=(").concat(filtroClientes, ")");
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 4, , 5]);
@@ -585,7 +578,7 @@ function getProductosCliente() {
 // --- FUNCIÓN PRINCIPAL ---
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var token, today, sevenDaysAgo_1, formattedSevenDaysAgo, apiExp, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, apiOrderIds_1, _loop_1, i, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_7;
+        var token, today, sevenDaysAgo_1, formattedSevenDaysAgo, lineasExpedicionUrl, expedicionesData, horasDeCargaPorPedido_1, lineasVentaData, pedidosApi, allOrdersRef, snapshot, firebaseData_1, firebaseOrderMap_1, updates_1, newOrdersCount_1, updatedOrdersCount_1, deletedOrdersCount_1, apiOrderIds_1, _loop_1, i, i, targetDate, formattedDate, horasCargaData, horasCargaRef, productosCliente, productosClienteRef, error_7;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -600,8 +593,7 @@ function main() {
                     formattedSevenDaysAgo = formatDate(sevenDaysAgo_1);
                     // --- PEDIDOS GENERALES ---
                     console.log('Procesando pedidos generales...');
-                    apiExp = 'lineasExpdici%C3%B3n';
-                    lineasExpedicionUrl = "".concat(baseUrl, "Company('").concat(encodeCompany, "')/").concat(apiExp);
+                    lineasExpedicionUrl = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiExpediciones);
                     return [4 /*yield*/, fetchApiData(lineasExpedicionUrl, token)];
                 case 2:
                     expedicionesData = _a.sent();
@@ -702,7 +694,7 @@ function main() {
                                     return [4 /*yield*/, getPedidosMercadona(token, fecha)];
                                 case 1:
                                     mercadonaLinesData = _b.sent();
-                                    if (!(mercadonaLinesData.length > 0)) return [3 /*break*/, 6];
+                                    if (!(mercadonaLinesData && mercadonaLinesData.length > 0)) return [3 /*break*/, 6];
                                     pedidosMercadonaApi = agruparPedidosMercadona(mercadonaLinesData);
                                     mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
                                     return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
@@ -864,3 +856,5 @@ function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
+
+    

@@ -3,6 +3,8 @@ import { database } from '../firebaseConfig.js';
 import { ref, update, get, set, remove } from 'firebase/database';
 import { groupBy, isEqual } from 'lodash';
 import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../config/clientes_config';
+import { UrlBC, nombreEmpresa, apiLineasVenta, apiExpediciones, apiEmbalajeClienteProducto, apiExpedicionesCamion, apiDireccionesEnvio, apiProveedores } from '../config/ServiciosWeb_config';
+import { apiToken, idCliente, scopeBC} from '../config/usuario_config';
 
 // --- INTERFACES ---
 
@@ -17,6 +19,7 @@ interface ApiResponse<T> {
     '@odata.nextLink'?: string;
 }
 
+//Datos que se recogen de la lista de lineas de venta
 interface LineasVentaAPI {
     Document_No: string;
     Line_No: number;
@@ -39,6 +42,7 @@ interface LineasVentaAPI {
     Purchase_Order_No: string;
 }
 
+//Datos que se recogen de la lista de expediciones que son las horas de carga
 interface LineasExp {
     NumPedido: string;
     HoraCarga: string;
@@ -67,6 +71,7 @@ interface LineasVentaFiltrada {
     purchaseOrder: string;
 }
 
+//Agrupacion de los pedidos diarios
 interface PedidoAgrupado {
     numPedido: string;
     fechaPedido: string;
@@ -92,6 +97,7 @@ interface PedidoAgrupado {
     horasCarga?: string[];
 }
 
+//Datos que se recogen de las lineas de venta de los clientes mercadona e irmadona
 interface LineasVentaMercadona {
   Document_No: string
   Line_No: number
@@ -128,6 +134,7 @@ interface LineasVentaMercadonaFiltrada {
   ModeloCajas: string;
 }
 
+//Horas de carga de mercadona
 interface horasExp {
     Numero: string;
     FechaEnvio: string;
@@ -155,11 +162,11 @@ interface Direccion {
 }
 
 interface Proveedores {
-
     No: string
     Name: string
 }
 
+//Datos de los productos por clientes para las sobras
 interface ClienteProductoAPI {
     Item_No: string;
     Cliente: string; 
@@ -176,13 +183,7 @@ interface EnrichedProduct {
   
 // --- CONFIGURACIÓN ---
 
-const tokenEndpoint = 'https://login.microsoftonline.com/eaef5c77-b0af-4131-81cf-ceb195e3389c/oauth2/v2.0/token';
-const baseUrl = 'https://api.businesscentral.dynamics.com/v2.0/eaef5c77-b0af-4131-81cf-ceb195e3389c/Production/ODataV4/';
-const companyName = 'Patatas%20Hijolusa%2C%20S.A.U';
-const encodeCompany = encodeURIComponent(companyName);
-const myClientId = '39f3eb2e-e404-4648-aebf-6fdcf9883134';
 const myClientSecret = 'ik.8Q~1ehaUuSHYU2Uc7IWxf7dDfbz5f2TTndbwc';
-const scope = 'https://api.businesscentral.dynamics.com/.default';
 
 // --- FUNCIONES AUXILIARES ---
 
@@ -203,13 +204,13 @@ function formatDate(date: Date): string {
 async function getAccessToken(): Promise<string> {
     const body = new URLSearchParams({
         'grant_type': 'client_credentials',
-        'client_id': myClientId,
+        'client_id': idCliente,
         'client_secret': myClientSecret,
-        'scope': scope,
+        'scope': scopeBC,
     });
 
     try {
-        const response: Response = await fetch(tokenEndpoint, {
+        const response: Response = await fetch(apiToken, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body,
@@ -447,10 +448,9 @@ async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
 async function getPedidos(token: string, date: string): Promise<LineasVentaFiltrada[]> {
     
-    const apiPath = 'ConsultaLineasVenta';
     const tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS'];
     const filtroTipoCliente = tipoCliente.map(tipo => `TipoCliente eq '${tipo}'`).join(' or ');
-    const apiEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiPath}?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (${filtroTipoCliente}) and Order_Date ge ${date}`;
+    const apiEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiLineasVenta}?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (${filtroTipoCliente}) and Order_Date ge ${date}`;
 
     try {
         const allLineasVenta = await fetchApiData<LineasVentaAPI>(apiEndpoint, token);
@@ -512,10 +512,9 @@ async function getPedidos(token: string, date: string): Promise<LineasVentaFiltr
 
 //Función para obtener los pedidos de Mercadona
 async function getPedidosMercadona(token: string, date: string): Promise<LineasVentaMercadonaFiltrada[]> {
-    const apiPath = 'ConsultaLineasVenta'
     const cliente = ['C-00133', 'C-00656']
     const filtroCliente = cliente.map(id => `Sell_to_Customer_No eq '${id}'`).join(' or ')
-    const apiEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiPath}?$filter=startswith(Document_No, 'PV') and (${filtroCliente}) and Order_Date eq ${date}`
+    const apiEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiLineasVenta}?$filter=startswith(Document_No, 'PV') and (${filtroCliente}) and Order_Date eq ${date}`
 
     try {
         const lineasVenta = await fetchApiData<LineasVentaMercadona>(apiEndpoint, token);
@@ -565,19 +564,19 @@ async function getHorasCarga(token: string, date: Date) {
     const formattedDate = formatDate(date);
     const clientes = ['MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA'];
     const filtroExp = clientes.map(cliente => `NombreCliente eq '${cliente.replace("'", "''")}'`).join(' or ');
-    const apiExp = `lineasExpdici%C3%B3n?$filter=(${filtroExp}) and FechaEnvio eq ${formattedDate}`;
+    const apiExp = `${apiExpediciones}?$filter=(${filtroExp}) and FechaEnvio eq ${formattedDate}`;
 
     const idClientes = ['C-00133', 'C-00656'];
     const direccionEnvioFilter = idClientes.map(id => `Customer_No eq '${id}'`).join(' or ');
-    const apiDireccionesEnvio = `DireccionesEnvio?$filter=(${direccionEnvioFilter})`;
+    const apiDirEnvio = `${apiDireccionesEnvio}?$filter=(${direccionEnvioFilter})`;
 
-    const urlExp = `${baseUrl}Company('${encodeCompany}')/${apiExp}`;
-    const urlDirecciones = `${baseUrl}Company('${encodeCompany}')/${apiDireccionesEnvio}`;
+    const urlExp = `${UrlBC}Company('${nombreEmpresa}')/${apiExp}`;
+    const urlDirecciones = `${UrlBC}Company('${nombreEmpresa}')/${apiDirEnvio}`;
 
-    const filtroExpCam = `Expediciones?$filter=(FechaEnvio eq ${formattedDate})`;
-    const urlExpCamion = `${baseUrl}Company('${encodeCompany}')/${filtroExpCam}`;
+    const filtroExpCam = `${apiExpedicionesCamion}?$filter=(FechaEnvio eq ${formattedDate})`;
+    const urlExpCamion = `${UrlBC}Company('${nombreEmpresa}')/${filtroExpCam}`;
     
-    const urlProveedores = `${baseUrl}Company('${encodeCompany}')/Proveedores`;
+    const urlProveedores = `${UrlBC}Company('${nombreEmpresa}')/${apiProveedores}`;
 
     try {
         const horasCarga = await fetchApiData<horasExp>(urlExp, token);
@@ -684,9 +683,7 @@ async function getProductosCliente () {
     const idClientes = ['C-00429', 'C-00988', 'C-01142', 'C-00071'];
     const filtroClientes = idClientes.map(id => `Cliente eq '${id}'`).join(' or ');
     
-    const apiEmbalajeClienteProducto = `EmblajeClienteProducto?$filter=(${filtroClientes})`;
-  
-    const embalajeEndpoint = `${baseUrl}Company('${encodeCompany}')/${apiEmbalajeClienteProducto}`;
+    const embalajeEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiEmbalajeClienteProducto}?$filter=(${filtroClientes})`;
 
     try {
         const token = await getAccessToken();
@@ -718,8 +715,7 @@ async function main() {
 
         // --- PEDIDOS GENERALES ---
         console.log('Procesando pedidos generales...');
-        const apiExp = 'lineasExpdici%C3%B3n';
-        const lineasExpedicionUrl = `${baseUrl}Company('${encodeCompany}')/${apiExp}`;
+        const lineasExpedicionUrl = `${UrlBC}Company('${nombreEmpresa}')/${apiExpediciones}`;
         const expedicionesData = await fetchApiData<LineasExp>(lineasExpedicionUrl, token);
 
         const horasDeCargaPorPedido = new Map<string, string[]>();
@@ -838,7 +834,7 @@ async function main() {
             console.log(`Procesando Mercadona para fecha: ${fecha}`);
             const mercadonaLinesData = await getPedidosMercadona(token, fecha);
 
-            if (mercadonaLinesData.length > 0) {
+            if (mercadonaLinesData && mercadonaLinesData.length > 0) {
                 const pedidosMercadonaApi = agruparPedidosMercadona(mercadonaLinesData);
                 
                 const mercadonaRef = ref(database, `mercadona/${fecha}`);
@@ -990,3 +986,5 @@ async function main() {
 }
 // Descomenta la siguiente línea para ejecutar la función al correr el script
 main();
+
+    

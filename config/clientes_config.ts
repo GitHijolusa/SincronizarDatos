@@ -1,7 +1,11 @@
+
+//Clientes de reparto permitidos
 export const clientesRepartoPermitidos: string[] = ['CASA BLAS, S.A.', 'LA BAÑEZA FRUTAS Y VERDURAS SL'];
 
+//Otros clientes permitidos
 export const otrosClientesPermitidos: string[] = ['CLIENTE LOTES REPARTO'];
 
+//Clientes excluidos
 export const clientesExcluidos: string[] = [
     'MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA', 
     'SOCIEDAD DE COMPRAS MODERNAS, S.A', 'GUFRESCO, S.L.',
