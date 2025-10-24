@@ -50,9 +50,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var firebaseConfig_js_1 = require("../firebaseConfig.js");
 var database_1 = require("firebase/database");
 var lodash_1 = require("lodash");
-var clientes_config_1 = require("../config/clientes_config");
-var ServiciosWeb_config_1 = require("../config/ServiciosWeb_config");
-var usuario_config_1 = require("../config/usuario_config");
+var clientes_config_1 = require("../config/compiled/clientes_config");
+var ServiciosWeb_config_1 = require("../config/compiled/ServiciosWeb_config");
+var usuario_config_1 = require("../config/compiled/usuario_config");
 // --- CONFIGURACIÓN ---
 var myClientSecret = 'ik.8Q~1ehaUuSHYU2Uc7IWxf7dDfbz5f2TTndbwc';
 // --- FUNCIONES AUXILIARES ---
@@ -297,7 +297,7 @@ function fetchApiData(apiUrl, token) {
                     return [4 /*yield*/, response.json()];
                 case 4:
                     data = _a.sent();
-                    allData.push.apply(allData, data.value || []);
+                    allData.push.apply(allData, (data.value || []));
                     nextLink = data['@odata.nextLink'];
                     return [3 /*break*/, 6];
                 case 5:
@@ -683,7 +683,7 @@ function main() {
                     // --- PEDIDOS MERCADONA ---
                     console.log('\nProcesando pedidos de Mercadona para los últimos 7 días...');
                     _loop_1 = function (i) {
-                        var processDate, fecha, mercadonaLinesData, pedidosMercadonaApi, mercadonaRef, snapshotMercadona, firebaseMercadonaData, mercadonaUpdates_1, newMercadonaCount_1, updatedMercadonaCount_1, deletedMercadonaCount_1, apiKeys_1, mercadonaRef, snapshot_1;
+                        var processDate, fecha, mercadonaLinesData, pedidosMercadonaApi, mercadonaRef, snapshotMercadona, firebaseMercadonaData_1, mercadonaUpdates_1, newMercadonaCount_1, updatedMercadonaCount_1, deletedMercadonaCount_1, apiKeys_1, mercadonaRef, snapshot_1;
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
@@ -700,7 +700,7 @@ function main() {
                                     return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
                                 case 2:
                                     snapshotMercadona = _b.sent();
-                                    firebaseMercadonaData = snapshotMercadona.val() || {};
+                                    firebaseMercadonaData_1 = snapshotMercadona.val() || {};
                                     mercadonaUpdates_1 = {};
                                     newMercadonaCount_1 = 0;
                                     updatedMercadonaCount_1 = 0;
@@ -709,7 +709,7 @@ function main() {
                                     pedidosMercadonaApi.forEach(function (pedidoApi) {
                                         var key = pedidoApi.plataforma.trim();
                                         apiKeys_1.add(key);
-                                        var existingOrderData = firebaseMercadonaData[key];
+                                        var existingOrderData = firebaseMercadonaData_1[key];
                                         var path = "mercadona/".concat(fecha, "/").concat(key);
                                         if (!existingOrderData) {
                                             // Pedido nuevo
@@ -758,7 +758,7 @@ function main() {
                                             }
                                         }
                                     });
-                                    Object.keys(firebaseMercadonaData).forEach(function (key) {
+                                    Object.keys(firebaseMercadonaData_1).forEach(function (key) {
                                         if (!apiKeys_1.has(key)) {
                                             mercadonaUpdates_1["mercadona/".concat(fecha, "/").concat(key)] = null;
                                             deletedMercadonaCount_1++;

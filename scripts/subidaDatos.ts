@@ -2,9 +2,9 @@ import { ExpedicionAgrupada, ExpedicionPorPlataforma, Order, Product } from '../
 import { database } from '../firebaseConfig.js';
 import { ref, update, get, set, remove } from 'firebase/database';
 import { groupBy, isEqual } from 'lodash';
-import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../config/clientes_config';
-import { UrlBC, nombreEmpresa, apiLineasVenta, apiExpediciones, apiEmbalajeClienteProducto, apiExpedicionesCamion, apiDireccionesEnvio, apiProveedores } from '../config/ServiciosWeb_config';
-import { apiToken, idCliente, scopeBC} from '../config/usuario_config';
+import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../config/compiled/clientes_config';
+import { UrlBC, nombreEmpresa, apiLineasVenta, apiExpediciones, apiEmbalajeClienteProducto, apiExpedicionesCamion, apiDireccionesEnvio, apiProveedores } from '../config/compiled/ServiciosWeb_config';
+import { apiToken, idCliente, scopeBC} from '../config/compiled/usuario_config';
 
 // --- INTERFACES ---
 
