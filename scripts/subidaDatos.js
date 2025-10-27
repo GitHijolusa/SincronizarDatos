@@ -319,7 +319,6 @@ function getPedidos(token, date) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    //Se obtienen los datos de los archivos de configuración
                     apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$").concat(filtrosServiciosWeb_config_1.filtroPedidosDiarios, " and Order_Date ge ").concat(date);
                     _a.label = 1;
                 case 1:
@@ -385,8 +384,7 @@ function getPedidosMercadona(token, date) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    //Se obtienen los datos de los archivos de configuración
-                    apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$filter=startswith(Document_No, 'PV') and (").concat(filtrosServiciosWeb_config_1.filtroMercadona, ") and Order_Date eq ").concat(date);
+                    apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$").concat(filtrosServiciosWeb_config_1.filtroMercadona, " and Order_Date eq ").concat(date);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -441,15 +439,12 @@ function getHorasCarga(token, date) {
             switch (_b.label) {
                 case 0:
                     formattedDate = formatDate(date);
-                    //Se obtienen los datos de los archivos de configuración
-                    apiExp = "".concat(ServiciosWeb_config_1.apiExpediciones, "?$filter=(").concat(filtrosServiciosWeb_config_1.filtroHorasCarga, ") and FechaEnvio eq ").concat(formattedDate);
-                    //Direcciones de envio para que en las horas de carga aparezcan los nombres de las plataformas
+                    apiExp = "".concat(ServiciosWeb_config_1.apiExpediciones, "?$").concat(filtrosServiciosWeb_config_1.filtroHorasCarga, " and FechaEnvio eq ").concat(formattedDate);
                     apiDirEnvio = "".concat(ServiciosWeb_config_1.apiDireccionesEnvio, "?$").concat(filtrosServiciosWeb_config_1.filtroDir);
                     urlExp = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(apiExp);
                     urlDirecciones = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(apiDirEnvio);
                     filtroExpCam = "".concat(ServiciosWeb_config_1.apiExpedicionesCamion, "?$filter=(FechaEnvio eq ").concat(formattedDate, ")");
                     urlExpCamion = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(filtroExpCam);
-                    //Se obtienen los datos de los archivos de configuración
                     urlProveedores = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiProveedores);
                     _b.label = 1;
                 case 1:
@@ -549,7 +544,6 @@ function getProductosCliente() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    //Se obtienen los datos de la url a traves de los archivos de configuración
                     embalajeEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiEmbalajeClienteProducto, "?$").concat(filtrosServiciosWeb_config_1.filtroEmbalaje);
                     _a.label = 1;
                 case 1:

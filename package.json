@@ -11,7 +11,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "subir-datos": "node scripts/subidaDatos.js",
-    "build-script": "tsc --module commonjs --outDir ./config/compiled config/secreto_config.ts config/filtrosServiciosWeb_config.ts config/ServiciosWeb_config.ts config/usuario_config.ts config/clientes_config.ts && tsc --module commonjs --outDir ./scripts scripts/subidaDatos.ts"
+    "build-script": "tsc --module commonjs --outDir ./config/compiled config/secreto_config.ts config/filtrosServiciosWeb_config.ts config/ServiciosWeb_config.ts config/usuario_config.ts config/clientes_config.ts && tsc --module commonjs scripts/subidaDatos.ts"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",
