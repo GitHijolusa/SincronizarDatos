@@ -53,9 +53,8 @@ var lodash_1 = require("lodash");
 var clientes_config_1 = require("../config/compiled/clientes_config");
 var ServiciosWeb_config_1 = require("../config/compiled/ServiciosWeb_config");
 var usuario_config_1 = require("../config/compiled/usuario_config");
-var filtrosServiciosWeb_config_1 = require("../config/filtrosServiciosWeb_config");
-// --- CONFIGURACIÓN ---
-var myClientSecret = 'ik.8Q~1ehaUuSHYU2Uc7IWxf7dDfbz5f2TTndbwc';
+var filtrosServiciosWeb_config_1 = require("../config/compiled/filtrosServiciosWeb_config");
+var secreto_config_1 = require("../config/compiled/secreto_config");
 // --- FUNCIONES AUXILIARES ---
 var clientNames = {
     "C-00429": "AHORRAMAS",
@@ -69,6 +68,7 @@ function formatDate(date) {
     var day = String(date.getDate()).padStart(2, '0');
     return "".concat(year, "-").concat(month, "-").concat(day);
 }
+//Parametros para conectarse a los servicios web de BC, se obtienen los datos de los archivos de configuración
 function getAccessToken() {
     return __awaiter(this, void 0, void 0, function () {
         var body, response, errorData, tokenData, error_1;
@@ -78,7 +78,7 @@ function getAccessToken() {
                     body = new URLSearchParams({
                         'grant_type': 'client_credentials',
                         'client_id': usuario_config_1.idCliente,
-                        'client_secret': myClientSecret,
+                        'client_secret': secreto_config_1.secreto,
                         'scope': usuario_config_1.scopeBC,
                     });
                     _a.label = 1;
@@ -319,6 +319,7 @@ function getPedidos(token, date) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    //Se obtienen los datos de los archivos de configuración
                     apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$").concat(filtrosServiciosWeb_config_1.filtroPedidosDiarios, " and Order_Date ge ").concat(date);
                     _a.label = 1;
                 case 1:
@@ -384,6 +385,7 @@ function getPedidosMercadona(token, date) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    //Se obtienen los datos de los archivos de configuración
                     apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$filter=startswith(Document_No, 'PV') and (").concat(filtrosServiciosWeb_config_1.filtroMercadona, ") and Order_Date eq ").concat(date);
                     _a.label = 1;
                 case 1:
@@ -439,12 +441,15 @@ function getHorasCarga(token, date) {
             switch (_b.label) {
                 case 0:
                     formattedDate = formatDate(date);
+                    //Se obtienen los datos de los archivos de configuración
                     apiExp = "".concat(ServiciosWeb_config_1.apiExpediciones, "?$filter=(").concat(filtrosServiciosWeb_config_1.filtroHorasCarga, ") and FechaEnvio eq ").concat(formattedDate);
+                    //Direcciones de envio para que en las horas de carga aparezcan los nombres de las plataformas
                     apiDirEnvio = "".concat(ServiciosWeb_config_1.apiDireccionesEnvio, "?$").concat(filtrosServiciosWeb_config_1.filtroDir);
                     urlExp = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(apiExp);
                     urlDirecciones = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(apiDirEnvio);
                     filtroExpCam = "".concat(ServiciosWeb_config_1.apiExpedicionesCamion, "?$filter=(FechaEnvio eq ").concat(formattedDate, ")");
                     urlExpCamion = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(filtroExpCam);
+                    //Se obtienen los datos de los archivos de configuración
                     urlProveedores = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiProveedores);
                     _b.label = 1;
                 case 1:
@@ -544,6 +549,7 @@ function getProductosCliente() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    //Se obtienen los datos de la url a traves de los archivos de configuración
                     embalajeEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiEmbalajeClienteProducto, "?$").concat(filtrosServiciosWeb_config_1.filtroEmbalaje);
                     _a.label = 1;
                 case 1:

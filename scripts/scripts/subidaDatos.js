@@ -53,7 +53,7 @@ var lodash_1 = require("lodash");
 var clientes_config_1 = require("../config/compiled/clientes_config");
 var ServiciosWeb_config_1 = require("../config/compiled/ServiciosWeb_config");
 var usuario_config_1 = require("../config/compiled/usuario_config");
-var filtrosServiciosWeb_config_1 = require("../config/filtrosServiciosWeb_config");
+var filtrosServiciosWeb_config_1 = require("../config/compiled/filtrosServiciosWeb_config");
 var secreto_config_1 = require("../config/secreto_config");
 // --- FUNCIONES AUXILIARES ---
 var clientNames = {
@@ -327,7 +327,6 @@ function getPedidos(token, date) {
                 case 2:
                     allLineasVenta = _a.sent();
                     lineasConProducto = allLineasVenta.filter(function (linea) { return linea.No && linea.No.trim() !== ''; });
-                    lineasPorCliente = void 0;
                     lineasPorCliente = lineasConProducto.filter(function (linea) {
                         var cliente = linea.NombreCliente;
                         var tipoCliente = linea.TipoCliente;

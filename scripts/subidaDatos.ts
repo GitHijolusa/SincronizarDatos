@@ -5,8 +5,8 @@ import { groupBy, isEqual } from 'lodash';
 import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos, clientesIndustriaPermitidos } from '../config/compiled/clientes_config';
 import { UrlBC, nombreEmpresa, apiLineasVenta, apiExpediciones, apiEmbalajeClienteProducto, apiExpedicionesCamion, apiDireccionesEnvio, apiProveedores } from '../config/compiled/ServiciosWeb_config';
 import { apiToken, idCliente, scopeBC} from '../config/compiled/usuario_config';
-import { filtroPedidosDiarios, filtroMercadona, filtroEmbalaje, filtroHorasCarga, filtroDir } from '../config/filtrosServiciosWeb_config';
-import { secreto } from '../config/secreto_config';
+import { filtroPedidosDiarios, filtroMercadona, filtroEmbalaje, filtroHorasCarga, filtroDir } from '../config/compiled/filtrosServiciosWeb_config';
+import { secreto } from '../config/compiled/secreto_config';
 
 // --- INTERFACES ---
 
