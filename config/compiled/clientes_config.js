@@ -1,10 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clientesExcluidos = exports.otrosClientesPermitidos = exports.clientesRepartoPermitidos = void 0;
+exports.clientesExcluidos = exports.clientesIndustriaPermitidos = exports.otrosClientesPermitidos = exports.clientesRepartoPermitidos = void 0;
 //Clientes de reparto permitidos
 exports.clientesRepartoPermitidos = ['CASA BLAS, S.A.', 'LA BAÑEZA FRUTAS Y VERDURAS SL'];
 //Otros clientes permitidos
 exports.otrosClientesPermitidos = ['CLIENTE LOTES REPARTO'];
+//Clientes industria permitidos
+exports.clientesIndustriaPermitidos = ['ALCASAL SOLUCIONES DE ALIMENTACION S.L.'];
 //Clientes excluidos
 exports.clientesExcluidos = [
     'MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA',

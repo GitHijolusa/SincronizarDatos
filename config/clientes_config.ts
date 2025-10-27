@@ -5,6 +5,9 @@ export const clientesRepartoPermitidos: string[] = ['CASA BLAS, S.A.', 'LA BAÑE
 //Otros clientes permitidos
 export const otrosClientesPermitidos: string[] = ['CLIENTE LOTES REPARTO'];
 
+//Clientes industria permitidos
+export const clientesIndustriaPermitidos: string[] = ['ALCASAL SOLUCIONES DE ALIMENTACION S.L.'];
+
 //Clientes excluidos
 export const clientesExcluidos: string[] = [
     'MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA', 

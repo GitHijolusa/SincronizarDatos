@@ -2,7 +2,7 @@ import { ExpedicionAgrupada, ExpedicionPorPlataforma, Order, Product } from '../
 import { database } from '../firebaseConfig.js';
 import { ref, update, get, set, remove } from 'firebase/database';
 import { groupBy, isEqual } from 'lodash';
-import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../config/compiled/clientes_config';
+import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos, clientesIndustriaPermitidos } from '../config/compiled/clientes_config';
 import { UrlBC, nombreEmpresa, apiLineasVenta, apiExpediciones, apiEmbalajeClienteProducto, apiExpedicionesCamion, apiDireccionesEnvio, apiProveedores } from '../config/compiled/ServiciosWeb_config';
 import { apiToken, idCliente, scopeBC} from '../config/compiled/usuario_config';
 import { filtroPedidosDiarios, filtroMercadona, filtroEmbalaje, filtroHorasCarga, filtroDir } from '../config/filtrosServiciosWeb_config';
@@ -199,6 +199,7 @@ function formatDate(date: Date): string {
     return `${year}-${month}-${day}`;
 }
 
+//Parametros para conectarse a los servicios web de BC, se obtienen los datos de los archivos de configuración
 async function getAccessToken(): Promise<string> {
     const body = new URLSearchParams({
         'grant_type': 'client_credentials',
@@ -453,10 +454,7 @@ async function getPedidos(token: string, date: string): Promise<LineasVentaFiltr
         const allLineasVenta = await fetchApiData<LineasVentaAPI>(apiEndpoint, token);
         const lineasConProducto = allLineasVenta.filter(linea => linea.No && linea.No.trim() !== '');
 
-        let lineasPorCliente: LineasVentaAPI[];
-
-        
-        lineasPorCliente = lineasConProducto.filter(linea => {
+        const lineasPorCliente = lineasConProducto.filter(linea => {
             const cliente = linea.NombreCliente;
             const tipoCliente = linea.TipoCliente;
             
@@ -466,6 +464,10 @@ async function getPedidos(token: string, date: string): Promise<LineasVentaFiltr
 
             if (tipoCliente === 'OTROS') {
                 return otrosClientesPermitidos.includes(cliente);
+            }
+
+            if (tipoCliente === 'INDUSTRIA') {
+                return clientesIndustriaPermitidos.includes(cliente);
             }
             
             return !clientesExcluidos.includes(cliente);

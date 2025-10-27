@@ -1,7 +1,7 @@
 //Filtro para el servicio web de lineas de venta
 
 //Tipo de cliente pedidos diarios
-const tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS'];
+const tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS', 'INDUSTRIA'];
 //Filtro para lineas de venta
 const filtroTipoCliente = tipoCliente.map(tipo => `TipoCliente eq '${tipo}'`).join(' or ');
 //Filtro completo de lineas de venta para pedidos diarios
@@ -48,5 +48,6 @@ const idClientes = ['C-00429', 'C-00988', 'C-01142', 'C-00071'];
 const filtroClientes = idClientes.map(id => `Cliente eq '${id}'`).join(' or ');
 //Filtro completo embalajes cliente/Producto
 export const filtroEmbalaje = `filter=(${filtroClientes})`
+
 
 

@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.filtroEmbalaje = exports.filtroDir = exports.filtroHorasCarga = exports.filtroMercadona = exports.filtroPedidosDiarios = void 0;
 //Tipo de cliente pedidos diarios
-var tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS'];
+var tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS', 'INDUSTRIA'];
 //Filtro para lineas de venta
 var filtroTipoCliente = tipoCliente.map(function (tipo) { return "TipoCliente eq '".concat(tipo, "'"); }).join(' or ');
 //Filtro completo de lineas de venta para pedidos diarios

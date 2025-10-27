@@ -68,6 +68,7 @@ function formatDate(date) {
     var day = String(date.getDate()).padStart(2, '0');
     return "".concat(year, "-").concat(month, "-").concat(day);
 }
+//Parametros para conectarse a los servicios web de BC, se obtienen los datos de los archivos de configuración
 function getAccessToken() {
     return __awaiter(this, void 0, void 0, function () {
         var body, response, errorData, tokenData, error_1;
@@ -335,6 +336,9 @@ function getPedidos(token, date) {
                         }
                         if (tipoCliente === 'OTROS') {
                             return clientes_config_1.otrosClientesPermitidos.includes(cliente);
+                        }
+                        if (tipoCliente === 'INDUSTRIA') {
+                            return clientes_config_1.clientesIndustriaPermitidos.includes(cliente);
                         }
                         return !clientes_config_1.clientesExcluidos.includes(cliente);
                     });

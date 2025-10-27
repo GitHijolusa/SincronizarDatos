@@ -53,6 +53,7 @@ var lodash_1 = require("lodash");
 var clientes_config_1 = require("../config/compiled/clientes_config");
 var ServiciosWeb_config_1 = require("../config/compiled/ServiciosWeb_config");
 var usuario_config_1 = require("../config/compiled/usuario_config");
+var filtrosServiciosWeb_config_1 = require("../config/filtrosServiciosWeb_config");
 // --- CONFIGURACIÓN ---
 var myClientSecret = 'ik.8Q~1ehaUuSHYU2Uc7IWxf7dDfbz5f2TTndbwc';
 // --- FUNCIONES AUXILIARES ---
@@ -314,13 +315,11 @@ function fetchApiData(apiUrl, token) {
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
 function getPedidos(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var tipoCliente, filtroTipoCliente, apiEndpoint, allLineasVenta, lineasConProducto, lineasPorCliente, lineasFiltradas, error_3;
+        var apiEndpoint, allLineasVenta, lineasConProducto, lineasPorCliente, lineasFiltradas, error_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS'];
-                    filtroTipoCliente = tipoCliente.map(function (tipo) { return "TipoCliente eq '".concat(tipo, "'"); }).join(' or ');
-                    apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (").concat(filtroTipoCliente, ") and Order_Date ge ").concat(date);
+                    apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$").concat(filtrosServiciosWeb_config_1.filtroPedidosDiarios, " and Order_Date ge ").concat(date);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -328,7 +327,6 @@ function getPedidos(token, date) {
                 case 2:
                     allLineasVenta = _a.sent();
                     lineasConProducto = allLineasVenta.filter(function (linea) { return linea.No && linea.No.trim() !== ''; });
-                    lineasPorCliente = void 0;
                     lineasPorCliente = lineasConProducto.filter(function (linea) {
                         var cliente = linea.NombreCliente;
                         var tipoCliente = linea.TipoCliente;
@@ -337,6 +335,9 @@ function getPedidos(token, date) {
                         }
                         if (tipoCliente === 'OTROS') {
                             return clientes_config_1.otrosClientesPermitidos.includes(cliente);
+                        }
+                        if (tipoCliente === 'INDUSTRIA') {
+                            return clientes_config_1.clientesIndustriaPermitidos.includes(cliente);
                         }
                         return !clientes_config_1.clientesExcluidos.includes(cliente);
                     });
@@ -379,13 +380,11 @@ function getPedidos(token, date) {
 //Función para obtener los pedidos de Mercadona
 function getPedidosMercadona(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var cliente, filtroCliente, apiEndpoint, lineasVenta, lineasConProducto, lineasFiltradas, error_4;
+        var apiEndpoint, lineasVenta, lineasConProducto, lineasFiltradas, error_4;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    cliente = ['C-00133', 'C-00656'];
-                    filtroCliente = cliente.map(function (id) { return "Sell_to_Customer_No eq '".concat(id, "'"); }).join(' or ');
-                    apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$filter=startswith(Document_No, 'PV') and (").concat(filtroCliente, ") and Order_Date eq ").concat(date);
+                    apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$filter=startswith(Document_No, 'PV') and (").concat(filtrosServiciosWeb_config_1.filtroMercadona, ") and Order_Date eq ").concat(date);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -435,17 +434,13 @@ function getPedidosMercadona(token, date) {
 //Función para obtener las expediciones por hora de carga y plataforma
 function getHorasCarga(token, date) {
     return __awaiter(this, void 0, void 0, function () {
-        var formattedDate, clientes, filtroExp, apiExp, idClientes, direccionEnvioFilter, apiDirEnvio, urlExp, urlDirecciones, filtroExpCam, urlExpCamion, urlProveedores, horasCarga, _a, direcciones, expedicionesCamion, proveedores, direccionesMap_1, proveedoresMap_1, conductoresMap_1, expedicionesConCiudad, expedicionesConConductor, groupedByHora, result, error_5;
+        var formattedDate, apiExp, apiDirEnvio, urlExp, urlDirecciones, filtroExpCam, urlExpCamion, urlProveedores, horasCarga, _a, direcciones, expedicionesCamion, proveedores, direccionesMap_1, proveedoresMap_1, conductoresMap_1, expedicionesConCiudad, expedicionesConConductor, groupedByHora, result, error_5;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     formattedDate = formatDate(date);
-                    clientes = ['MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA'];
-                    filtroExp = clientes.map(function (cliente) { return "NombreCliente eq '".concat(cliente.replace("'", "''"), "'"); }).join(' or ');
-                    apiExp = "".concat(ServiciosWeb_config_1.apiExpediciones, "?$filter=(").concat(filtroExp, ") and FechaEnvio eq ").concat(formattedDate);
-                    idClientes = ['C-00133', 'C-00656'];
-                    direccionEnvioFilter = idClientes.map(function (id) { return "Customer_No eq '".concat(id, "'"); }).join(' or ');
-                    apiDirEnvio = "".concat(ServiciosWeb_config_1.apiDireccionesEnvio, "?$filter=(").concat(direccionEnvioFilter, ")");
+                    apiExp = "".concat(ServiciosWeb_config_1.apiExpediciones, "?$filter=(").concat(filtrosServiciosWeb_config_1.filtroHorasCarga, ") and FechaEnvio eq ").concat(formattedDate);
+                    apiDirEnvio = "".concat(ServiciosWeb_config_1.apiDireccionesEnvio, "?$").concat(filtrosServiciosWeb_config_1.filtroDir);
                     urlExp = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(apiExp);
                     urlDirecciones = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(apiDirEnvio);
                     filtroExpCam = "".concat(ServiciosWeb_config_1.apiExpedicionesCamion, "?$filter=(FechaEnvio eq ").concat(formattedDate, ")");
@@ -545,13 +540,11 @@ function groupProducts(products) {
 //Función que obtiene los productos de cliente de la lista embalaje cliente/producto para seleccionar los productos de sobras
 function getProductosCliente() {
     return __awaiter(this, void 0, void 0, function () {
-        var idClientes, filtroClientes, embalajeEndpoint, token, embalajeProducts, enrichedProducts, productosAgrupados, error_6;
+        var embalajeEndpoint, token, embalajeProducts, enrichedProducts, productosAgrupados, error_6;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    idClientes = ['C-00429', 'C-00988', 'C-01142', 'C-00071'];
-                    filtroClientes = idClientes.map(function (id) { return "Cliente eq '".concat(id, "'"); }).join(' or ');
-                    embalajeEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiEmbalajeClienteProducto, "?$filter=(").concat(filtroClientes, ")");
+                    embalajeEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiEmbalajeClienteProducto, "?$").concat(filtrosServiciosWeb_config_1.filtroEmbalaje);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 4, , 5]);
