@@ -5,6 +5,8 @@ import { groupBy, isEqual } from 'lodash';
 import { clientesExcluidos, clientesRepartoPermitidos, otrosClientesPermitidos } from '../config/compiled/clientes_config';
 import { UrlBC, nombreEmpresa, apiLineasVenta, apiExpediciones, apiEmbalajeClienteProducto, apiExpedicionesCamion, apiDireccionesEnvio, apiProveedores } from '../config/compiled/ServiciosWeb_config';
 import { apiToken, idCliente, scopeBC} from '../config/compiled/usuario_config';
+import { filtroPedidosDiarios, filtroMercadona, filtroEmbalaje, filtroHorasCarga, filtroDir } from '../config/filtrosServiciosWeb_config';
+import { secreto } from '../config/secreto_config';
 
 // --- INTERFACES ---
 
@@ -181,9 +183,6 @@ interface EnrichedProduct {
     Nombre_Cliente: string;
 }
   
-// --- CONFIGURACIÓN ---
-const myClientSecret = 'ik.8Q~1ehaUuSHYU2Uc7IWxf7dDfbz5f2TTndbwc';
-
 // --- FUNCIONES AUXILIARES ---
 
 const clientNames: Record<string, string> = {
@@ -204,7 +203,7 @@ async function getAccessToken(): Promise<string> {
     const body = new URLSearchParams({
         'grant_type': 'client_credentials',
         'client_id': idCliente,
-        'client_secret': myClientSecret,
+        'client_secret': secreto,
         'scope': scopeBC,
     });
 
@@ -447,9 +446,8 @@ async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
 async function getPedidos(token: string, date: string): Promise<LineasVentaFiltrada[]> {
     
-    const tipoCliente = ['GRAN CLIENTE', 'MERCADOS', 'REPARTO', 'RESTO RETAILS', 'OTROS'];
-    const filtroTipoCliente = tipoCliente.map(tipo => `TipoCliente eq '${tipo}'`).join(' or ');
-    const apiEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiLineasVenta}?$filter=(startswith(Document_No, 'PV') or startswith(Document_No, 'PREP')) and (${filtroTipoCliente}) and Order_Date ge ${date}`;
+    //Se obtienen los datos de los archivos de configuración
+    const apiEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiLineasVenta}?$${filtroPedidosDiarios} and Order_Date ge ${date}`;
 
     try {
         const allLineasVenta = await fetchApiData<LineasVentaAPI>(apiEndpoint, token);
@@ -511,9 +509,9 @@ async function getPedidos(token: string, date: string): Promise<LineasVentaFiltr
 
 //Función para obtener los pedidos de Mercadona
 async function getPedidosMercadona(token: string, date: string): Promise<LineasVentaMercadonaFiltrada[]> {
-    const cliente = ['C-00133', 'C-00656']
-    const filtroCliente = cliente.map(id => `Sell_to_Customer_No eq '${id}'`).join(' or ')
-    const apiEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiLineasVenta}?$filter=startswith(Document_No, 'PV') and (${filtroCliente}) and Order_Date eq ${date}`
+
+    //Se obtienen los datos de los archivos de configuración
+    const apiEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiLineasVenta}?$filter=startswith(Document_No, 'PV') and (${filtroMercadona}) and Order_Date eq ${date}`
 
     try {
         const lineasVenta = await fetchApiData<LineasVentaMercadona>(apiEndpoint, token);
@@ -561,20 +559,20 @@ async function getPedidosMercadona(token: string, date: string): Promise<LineasV
 //Función para obtener las expediciones por hora de carga y plataforma
 async function getHorasCarga(token: string, date: Date) {
     const formattedDate = formatDate(date);
-    const clientes = ['MERCADONA SA', 'IRMÃDONA SUPERMERCADOS UNIPESSOAL, LDA'];
-    const filtroExp = clientes.map(cliente => `NombreCliente eq '${cliente.replace("'", "''")}'`).join(' or ');
-    const apiExp = `${apiExpediciones}?$filter=(${filtroExp}) and FechaEnvio eq ${formattedDate}`;
 
-    const idClientes = ['C-00133', 'C-00656'];
-    const direccionEnvioFilter = idClientes.map(id => `Customer_No eq '${id}'`).join(' or ');
-    const apiDirEnvio = `${apiDireccionesEnvio}?$filter=(${direccionEnvioFilter})`;
+    //Se obtienen los datos de los archivos de configuración
+    const apiExp = `${apiExpediciones}?$filter=(${filtroHorasCarga}) and FechaEnvio eq ${formattedDate}`;
+
+    //Direcciones de envio para que en las horas de carga aparezcan los nombres de las plataformas
+    const apiDirEnvio = `${apiDireccionesEnvio}?$${filtroDir}`;
 
     const urlExp = `${UrlBC}Company('${nombreEmpresa}')/${apiExp}`;
     const urlDirecciones = `${UrlBC}Company('${nombreEmpresa}')/${apiDirEnvio}`;
 
     const filtroExpCam = `${apiExpedicionesCamion}?$filter=(FechaEnvio eq ${formattedDate})`;
     const urlExpCamion = `${UrlBC}Company('${nombreEmpresa}')/${filtroExpCam}`;
-    
+
+    //Se obtienen los datos de los archivos de configuración
     const urlProveedores = `${UrlBC}Company('${nombreEmpresa}')/${apiProveedores}`;
 
     try {
@@ -679,10 +677,8 @@ function enrichProductsWithClientNames(products: ClienteProductoAPI[]): Enriched
 //Función que obtiene los productos de cliente de la lista embalaje cliente/producto para seleccionar los productos de sobras
 async function getProductosCliente () {
 
-    const idClientes = ['C-00429', 'C-00988', 'C-01142', 'C-00071'];
-    const filtroClientes = idClientes.map(id => `Cliente eq '${id}'`).join(' or ');
-    
-    const embalajeEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiEmbalajeClienteProducto}?$filter=(${filtroClientes})`;
+    //Se obtienen los datos de la url a traves de los archivos de configuración
+    const embalajeEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiEmbalajeClienteProducto}?$${filtroEmbalaje}`;
 
     try {
         const token = await getAccessToken();
