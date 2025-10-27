@@ -446,8 +446,6 @@ async function fetchApiData<T>(apiUrl: string, token: string): Promise<T[]> {
 
 //Función para obtener los pedidos que no son de los clientes Mercadona e Irmadona
 async function getPedidos(token: string, date: string): Promise<LineasVentaFiltrada[]> {
-    
-    //Se obtienen los datos de los archivos de configuración
     const apiEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiLineasVenta}?$${filtroPedidosDiarios} and Order_Date ge ${date}`;
 
     try {
@@ -511,9 +509,7 @@ async function getPedidos(token: string, date: string): Promise<LineasVentaFiltr
 
 //Función para obtener los pedidos de Mercadona
 async function getPedidosMercadona(token: string, date: string): Promise<LineasVentaMercadonaFiltrada[]> {
-
-    //Se obtienen los datos de los archivos de configuración
-    const apiEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiLineasVenta}?$filter=startswith(Document_No, 'PV') and (${filtroMercadona}) and Order_Date eq ${date}`
+    const apiEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiLineasVenta}?$${filtroMercadona} and Order_Date eq ${date}`
 
     try {
         const lineasVenta = await fetchApiData<LineasVentaMercadona>(apiEndpoint, token);
@@ -561,20 +557,12 @@ async function getPedidosMercadona(token: string, date: string): Promise<LineasV
 //Función para obtener las expediciones por hora de carga y plataforma
 async function getHorasCarga(token: string, date: Date) {
     const formattedDate = formatDate(date);
-
-    //Se obtienen los datos de los archivos de configuración
-    const apiExp = `${apiExpediciones}?$filter=(${filtroHorasCarga}) and FechaEnvio eq ${formattedDate}`;
-
-    //Direcciones de envio para que en las horas de carga aparezcan los nombres de las plataformas
+    const apiExp = `${apiExpediciones}?$${filtroHorasCarga} and FechaEnvio eq ${formattedDate}`;
     const apiDirEnvio = `${apiDireccionesEnvio}?$${filtroDir}`;
-
     const urlExp = `${UrlBC}Company('${nombreEmpresa}')/${apiExp}`;
     const urlDirecciones = `${UrlBC}Company('${nombreEmpresa}')/${apiDirEnvio}`;
-
     const filtroExpCam = `${apiExpedicionesCamion}?$filter=(FechaEnvio eq ${formattedDate})`;
     const urlExpCamion = `${UrlBC}Company('${nombreEmpresa}')/${filtroExpCam}`;
-
-    //Se obtienen los datos de los archivos de configuración
     const urlProveedores = `${UrlBC}Company('${nombreEmpresa}')/${apiProveedores}`;
 
     try {
@@ -678,8 +666,6 @@ function enrichProductsWithClientNames(products: ClienteProductoAPI[]): Enriched
 
 //Función que obtiene los productos de cliente de la lista embalaje cliente/producto para seleccionar los productos de sobras
 async function getProductosCliente () {
-
-    //Se obtienen los datos de la url a traves de los archivos de configuración
     const embalajeEndpoint = `${UrlBC}Company('${nombreEmpresa}')/${apiEmbalajeClienteProducto}?$${filtroEmbalaje}`;
 
     try {

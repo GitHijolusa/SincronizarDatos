@@ -54,7 +54,7 @@ var clientes_config_1 = require("../config/compiled/clientes_config");
 var ServiciosWeb_config_1 = require("../config/compiled/ServiciosWeb_config");
 var usuario_config_1 = require("../config/compiled/usuario_config");
 var filtrosServiciosWeb_config_1 = require("../config/compiled/filtrosServiciosWeb_config");
-var secreto_config_1 = require("../config/secreto_config");
+var secreto_config_1 = require("../config/compiled/secreto_config");
 // --- FUNCIONES AUXILIARES ---
 var clientNames = {
     "C-00429": "AHORRAMAS",
@@ -384,7 +384,7 @@ function getPedidosMercadona(token, date) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$filter=startswith(Document_No, 'PV') and (").concat(filtrosServiciosWeb_config_1.filtroMercadona, ") and Order_Date eq ").concat(date);
+                    apiEndpoint = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(ServiciosWeb_config_1.apiLineasVenta, "?$").concat(filtrosServiciosWeb_config_1.filtroMercadona, " and Order_Date eq ").concat(date);
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, , 4]);
@@ -439,7 +439,7 @@ function getHorasCarga(token, date) {
             switch (_b.label) {
                 case 0:
                     formattedDate = formatDate(date);
-                    apiExp = "".concat(ServiciosWeb_config_1.apiExpediciones, "?$filter=(").concat(filtrosServiciosWeb_config_1.filtroHorasCarga, ") and FechaEnvio eq ").concat(formattedDate);
+                    apiExp = "".concat(ServiciosWeb_config_1.apiExpediciones, "?$").concat(filtrosServiciosWeb_config_1.filtroHorasCarga, " and FechaEnvio eq ").concat(formattedDate);
                     apiDirEnvio = "".concat(ServiciosWeb_config_1.apiDireccionesEnvio, "?$").concat(filtrosServiciosWeb_config_1.filtroDir);
                     urlExp = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(apiExp);
                     urlDirecciones = "".concat(ServiciosWeb_config_1.UrlBC, "Company('").concat(ServiciosWeb_config_1.nombreEmpresa, "')/").concat(apiDirEnvio);
