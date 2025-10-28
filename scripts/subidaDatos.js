@@ -676,7 +676,7 @@ function main() {
                     // --- PEDIDOS MERCADONA ---
                     console.log('\nProcesando pedidos de Mercadona para los últimos 7 días...');
                     _loop_1 = function (i) {
-                        var processDate, fecha, mercadonaLinesData, pedidosMercadonaApi, mercadonaRef, snapshotMercadona, firebaseMercadonaData_1, mercadonaUpdates_1, newMercadonaCount_1, updatedMercadonaCount_1, deletedMercadonaCount_1, apiKeys_1, mercadonaRef, snapshot_1;
+                        var processDate, fecha, mercadonaLinesData, pedidosMercadonaApi, mercadonaRef, snapshotMercadona, firebaseMercadonaData_1, mercadonaUpdates_1, newMercadonaCount_1, updatedMercadonaCount_1, deletedMercadonaCount_1, apiKeys_1;
                         return __generator(this, function (_b) {
                             switch (_b.label) {
                                 case 0:
@@ -687,7 +687,11 @@ function main() {
                                     return [4 /*yield*/, getPedidosMercadona(token, fecha)];
                                 case 1:
                                     mercadonaLinesData = _b.sent();
-                                    if (!(mercadonaLinesData && mercadonaLinesData.length > 0)) return [3 /*break*/, 6];
+                                    // Si la llamada a la API falla (devuelve array vacío), no hacer nada para evitar borrados.
+                                    if (mercadonaLinesData.length === 0) {
+                                        console.log("Mercadona (".concat(fecha, "): No se encontraron datos en la API o la llamada fall\u00F3. No se realizar\u00E1n cambios."));
+                                        return [2 /*return*/, "continue"];
+                                    }
                                     pedidosMercadonaApi = agruparPedidosMercadona(mercadonaLinesData);
                                     mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
                                     return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
@@ -766,19 +770,7 @@ function main() {
                                 case 4:
                                     console.log("Mercadona (".concat(fecha, "): Sin cambios."));
                                     _b.label = 5;
-                                case 5: return [3 /*break*/, 9];
-                                case 6:
-                                    mercadonaRef = (0, database_1.ref)(firebaseConfig_js_1.database, "mercadona/".concat(fecha));
-                                    return [4 /*yield*/, (0, database_1.get)(mercadonaRef)];
-                                case 7:
-                                    snapshot_1 = _b.sent();
-                                    if (!snapshot_1.exists()) return [3 /*break*/, 9];
-                                    return [4 /*yield*/, (0, database_1.remove)(mercadonaRef)];
-                                case 8:
-                                    _b.sent();
-                                    console.log("Mercadona (".concat(fecha, "): Eliminados todos los pedidos de Firebase porque no se encontraron en la API."));
-                                    _b.label = 9;
-                                case 9: return [2 /*return*/];
+                                case 5: return [2 /*return*/];
                             }
                         });
                     };
